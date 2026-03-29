@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from app.db.mongodb import db_instance
-from datetime import datetime, timedelta
 from pydantic import BaseModel
 
 class PasswordReq(BaseModel):
@@ -10,12 +9,6 @@ router = APIRouter()
 
 @router.get("/dashboard/statistics")
 async def get_dashboard_stats():
-     # 1. 【核心逻辑】自动清理离线学生 (超过 20 秒没发心跳，视为断线)
-    timeout_threshold = datetime.now() - timedelta(seconds=20)
-    await db_instance.db.students.update_many(
-        {"is_logged_in": True, "last_active_time": {"$lt": timeout_threshold}},
-        {"$set": {"is_logged_in": False}}  # 强行置为离线，但不清空进度
-    )
 
     """大屏核心数据：登录人数、四大数据统计表格、全班矩阵列表"""
     
@@ -69,11 +62,30 @@ async def get_dashboard_stats():
 
 @router.get("/dashboard/student-detail/{student_id}")
 async def get_one_student_detail(student_id: str):
-    """当老师点击某人时，单独获取该生的详情档案"""
     student = await db_instance.db.students.find_one({"student_id": student_id}, {"_id": 0})
     if not student:
         return {"error": "not found"}
-    return student
+    
+    # 确保把所有需要的字段都精准返回给前端
+    return {
+        "student_id": student.get("student_id"),
+        "student_name": student.get("student_name"),
+        "has_completed_ai": student.get("has_completed_ai", False),
+        "has_viewed_resources": student.get("has_viewed_resources", False),
+        "ai_feedback_text": student.get("ai_feedback_text", ""),
+        
+        # --- 核心修复：确保下发这 5 个课前预置多媒体资源 ---
+        "pre_record_card": student.get("pre_record_card", ""),
+        "pre_plant_1": student.get("pre_plant_1", ""),
+        "pre_plant_2": student.get("pre_plant_2", ""),
+        "pre_plant_3": student.get("pre_plant_3", ""),
+        "pre_video": student.get("pre_video", ""), # 确保下发视频
+        
+        # --- 流程产出图片 ---
+        "record_card_img": student.get("record_card_img", ""),
+        "draft_img": student.get("draft_img", ""),
+        "final_img": student.get("final_img", "")
+    }
 
 @router.post("/verify-password")
 async def verify_teacher_password(req: PasswordReq):

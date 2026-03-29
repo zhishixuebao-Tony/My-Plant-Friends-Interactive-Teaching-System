@@ -26,4 +26,3 @@ class StudentProfile(BaseModel):
     final_img: Optional[str] = None
 
     is_logged_in: bool = False
-    last_active_time: datetime = Field(default_factory=datetime.now) # 【新增】最后心跳时间
