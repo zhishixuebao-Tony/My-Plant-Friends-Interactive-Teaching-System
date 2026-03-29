@@ -13,6 +13,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: true, 
     proxy: {
       // 这里的 /api 会匹配你代码里的 axios.get('/api/...')
       '/api': {
@@ -24,6 +25,6 @@ export default defineConfig({
         target: 'ws://127.0.0.1:8000',
         ws: true,
       }
-    }
+    },
   }
 })

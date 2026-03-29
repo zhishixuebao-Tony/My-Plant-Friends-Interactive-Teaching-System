@@ -60,9 +60,9 @@
               <tr><td>资源 1</td><td>{{ stats.table3['资源 1'] || 0 }} 次</td></tr>
               <tr><td>资源 2</td><td>{{ stats.table3['资源 2'] || 0 }} 次</td></tr>
               <tr><td>资源 3</td><td>{{ stats.table3['资源 3'] || 0 }} 次</td></tr>
-              <tr class="highlight-row">
-                <td style="color:#07c160; font-weight:bold;">🚩 资源习题通关人数：</td>
-                <td style="color:#07c160; font-weight:bold;">{{ stats.resource_completed }} 人</td>
+              <tr class="highlight-row" style="background-color: #f6ffed; font-weight: bold;">
+                <td style="color: #07c160;">🚩 资源习题通关人数：</td>
+                <td style="color: #07c160;">{{ stats.resource_completed }} 人</td>
               </tr>
             </tbody>
           </table>
@@ -173,6 +173,12 @@ const showDrawer = ref(false);
 const activeData = ref(null);
 const detailLoading = ref(false);
 
+const socket = new WebSocket('wss://f2d9f8f.r35.cpolar.top/ws/stats');
+
+socket.onopen = () => {
+  console.log('✅ 穿透环境 WebSocket 连接成功');
+};
+
 let pollTimer = null;
 
 // --- 核心：自动轮询大屏数据 (每 3 秒绝对刷新一次) ---
@@ -181,18 +187,18 @@ const fetchDashboardData = async () => {
     const res = await axios.get('/api/teacher/dashboard/statistics');
     studentList.value = res.data.students_list; 
     
-    // 安全赋值统计数据
     stats.value = {
-      online: res.data.logged_in_count || 0,
-      total: res.data.total_students || 50,
+      online: res.data.logged_in_count,
+      total: res.data.total_students,
       table1: res.data.table1_sensory || {},
       table2: res.data.table2_dimension || {},
       table3: res.data.table3_resource || {},
       table4: res.data.table4_ai_count || 0,
-      resource_completed: res.data.resource_completed_count || 0
+      // 【关键修复】确保 res.data 里的字段名和 stats 里的字段名完全一致
+      resource_completed: res.data.resource_completed_count || 0 
     };
   } catch (err) {
-    console.error("刷新大屏数据失败", err);
+    console.error("刷新大屏失败:", err);
   }
 };
 
