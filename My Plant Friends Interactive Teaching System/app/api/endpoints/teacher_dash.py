@@ -1,6 +1,10 @@
 from fastapi import APIRouter
 from app.db.mongodb import db_instance
 from datetime import datetime, timedelta
+from pydantic import BaseModel
+
+class PasswordReq(BaseModel):
+    password: str
 
 router = APIRouter()
 
@@ -12,7 +16,6 @@ async def get_dashboard_stats():
         {"is_logged_in": True, "last_active_time": {"$lt": timeout_threshold}},
         {"$set": {"is_logged_in": False}}  # 强行置为离线，但不清空进度
     )
-
 
     """大屏核心数据：登录人数、四大数据统计表格、全班矩阵列表"""
     
@@ -49,16 +52,18 @@ async def get_dashboard_stats():
     ai_used_count = len([s for s in all_students if s.get("has_completed_ai", False)])
 
      # 统计五：魔法资源包完成人数
-    res_completed_count = len([s for s in all_students if s.get("has_viewed_resources")])
-    
-    # 汇总返回
+    res_completed_count = len([s for s in all_students if s.get("has_viewed_resources") == True])   
+
+    # 4. 汇总返回
     return {
         "logged_in_count": len([s for s in all_students if s.get("is_logged_in")]),
         "total_students": len(all_students),
         "table1_sensory": sensory_stats,
         "table2_dimension": dim_stats,
         "table3_resource": resource_stats,
-        "table4_ai_count": ai_used_count,
+        "table4_ai_count": len([s for s in all_students if s.get("has_completed_ai")]),
+        # 确保这个 key 名简单明确
+        "resource_completed_count": res_completed_count, 
         "students_list": all_students
     }
 
@@ -69,3 +74,13 @@ async def get_one_student_detail(student_id: str):
     if not student:
         return {"error": "not found"}
     return student
+
+@router.post("/verify-password")
+async def verify_teacher_password(req: PasswordReq):
+    admin_col = db_instance.db.admin_config
+    config = await admin_col.find_one({"key": "teacher_password"})
+    
+    if config and req.password == config["value"]:
+        return {"success": True}
+    else:
+        return {"success": False, "message": "密码错误，请重新输入"}

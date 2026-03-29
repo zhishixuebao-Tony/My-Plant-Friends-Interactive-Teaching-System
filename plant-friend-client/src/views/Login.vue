@@ -3,14 +3,12 @@
     <van-nav-bar title="我的植物朋友 - 课堂系统" />
 
     <div class="login-body">
-      <!-- 顶部图标与欢迎语 -->
       <div class="header-box">
         <van-icon name="flower-o" size="80" color="#07c160" />
         <h1>你好，新朋友！</h1>
         <p>请输入你的序号开始植物之旅</p>
       </div>
 
-      <!-- 输入区域 -->
       <div class="form-card">
         <van-field
           v-model="inputId"
@@ -54,7 +52,6 @@
       [ 教师端入口 ]
     </div>
 
-    <!-- 密码输入弹窗 -->
     <van-dialog 
       v-model:show="showPwdDialog" 
       title="教师身份验证" 
@@ -76,14 +73,11 @@
 
 <script setup>
 import { ref } from 'vue';
-import { loginApi } from '../api/student';
 import { useUserStore } from '../store/user';
 import { showToast } from 'vant';
-import { useRouter } from 'vue-router'; // 导入路由
 import axios from 'axios';
 
 const userStore = useUserStore();
-const router = useRouter(); // 【修正点2】初始化 router 变量
 const inputId = ref('');
 const tempName = ref('');
 const loading = ref(false);
@@ -91,55 +85,69 @@ const showConfirm = ref(false);
 const showPwdDialog = ref(false);
 const adminPassword = ref('');
 
-// --- 以下学生端逻辑保持不变 ---
+// 【关键修复】定义一个响应式对象，用来跨函数存储后端返回的学生完整数据
+const studentFullData = ref(null);
 
 const onPreLogin = async () => {
   if (!inputId.value) return showToast('先输入序号哦！');
+  
+  let sid = inputId.value;
+  if (sid.length === 1) sid = '0' + sid;
+  inputId.value = sid;
+
   loading.value = true;
   try {
-    const res = await loginApi(inputId.value);
-    tempName.value = res.data.student_name;
-    showConfirm.value = true;
+    const res = await axios.post('/api/student/stage0/login', { 
+      student_id: sid 
+    });
+    
+    // 解析后端返回的数据
+    if (res.data && res.data.status === 'success') {
+      studentFullData.value = res.data.data; 
+      tempName.value = studentFullData.value.student_name;
+      showConfirm.value = true;
+    } else {
+      showToast('学号不存在，请联系老师');
+    }
   } catch (err) {
-    showToast('找不到该学号，请检查！');
+    console.error("登录接口报错详情:", err);
+    // 如果 F12 控制台显示 422，说明参数格式不对；如果显示 404，说明路径不对
+    showToast('网络请求失败，请按 F12 检查接口路径');
   } finally {
     loading.value = false;
   }
 };
 
 const onFinalConfirm = () => {
+  if (!studentFullData.value) return;
+
+  // 【关键修复】使用 studentFullData 存储的值，避免 res 未定义的报错
   userStore.setUserInfo({
-    student_id: inputId.value,
-    student_name: tempName.value,
-    pre_photo_url: '' 
+    student_id: studentFullData.value.student_id,
+    student_name: studentFullData.value.student_name,
+    pre_plant_1: studentFullData.value.pre_plant_1, 
+    pre_plant_2: studentFullData.value.pre_plant_2,
+    pre_plant_3: studentFullData.value.pre_plant_3,
+    pre_video: studentFullData.value.pre_video 
   });
+  
   showToast('登录成功！');
-  router.push('/stage1'); // 确保学生点击确认后也能跳转
+  userStore.currentStage = '1'; 
 };
 
-// 教师登录逻辑
 const handleTeacherLogin = async () => {
-  if (!adminPassword.value) {
-    showToast('请输入密码');
-    return;
-  }
-  
+  if (!adminPassword.value) return showToast('请输入密码');
   try {
     const res = await axios.post('/api/teacher/verify-password', {
       password: adminPassword.value
     });
-
     if (res.data.success) {
-      showToast({ message: '验证通过，欢迎老师', type: 'success' });
-      
-      // 【核心修改点】跳转到带参数的地址
+      showToast({ message: '验证通过', type: 'success' });
       window.location.href = '/?role=teacher'; 
-      
     } else {
       showToast({ message: res.data.message || '密码错误', type: 'fail' });
     }
   } catch (err) {
-    console.error("Teacher login error:", err);
     showToast('服务器连接失败');
   } finally {
     adminPassword.value = ''; 
@@ -148,7 +156,7 @@ const handleTeacherLogin = async () => {
 </script>
 
 <style scoped>
-/* 样式保持不变 */
+/* 保持原样 */
 .login-page { min-height: 100vh; background-color: #f7f8fa; }
 .login-body { padding: 60px 30px; }
 .header-box { text-align: center; margin-bottom: 40px; }

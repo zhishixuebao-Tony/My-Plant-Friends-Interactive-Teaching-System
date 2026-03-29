@@ -19,12 +19,12 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:8000', // 确保指向你的 Python 后端
         changeOrigin: true,
-        // 不要写 rewrite，因为我们的后端路径本身就带有 /api
       },
       '/ws': {
         target: 'ws://127.0.0.1:8000',
         ws: true,
       }
     },
+    hmr: false
   }
 })

@@ -12,7 +12,8 @@ const pinia = createPinia()
 
 // 2. 配置后端 cpolar 公网地址 (替换为你自己的后端 cpolar 域名)
 // 注意：末尾不要带斜杠
-axios.defaults.baseURL = 'https://f2d9f8f.r35.cpolar.top'; 
+axios.defaults.baseURL = 'https://7edd6381.r35.cpolar.top'; 
+//axios.defaults.baseURL = 'http://127.0.0.1:8000';
 
 // 3. 为了方便在组件中使用，也可以挂载到全局（可选）
 app.config.globalProperties.$http = axios
