@@ -1,11 +1,8 @@
 🌱 《我的植物朋友》互动课堂系统 (My Plant Friends)
-![alt text](https://img.shields.io/badge/Vue%203-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
 
-![alt text](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)
+![alt text](https://img.shields.io/badge/Vue%203-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)![alt text](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)
 
-![alt text](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
-
-![alt text](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+![alt text](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)![alt text](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
 
 ![alt text](https://img.shields.io/badge/Aliyun%20OSS-FF6A00?style=for-the-badge&logo=alibabacloud&logoColor=white)
 本项目是专为小学三年级语文习作课《我的植物朋友》量身定制的 50 人高并发线下课堂互动教学系统。
