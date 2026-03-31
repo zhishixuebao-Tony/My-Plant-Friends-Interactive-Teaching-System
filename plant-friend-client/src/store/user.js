@@ -6,7 +6,6 @@ export const useUserStore = defineStore('user', {
     studentId: '',
     studentName: '',
     prePlantPhotos: [], 
-    preVideoUrl: '', 
     currentStage: '0'
   }),
   actions: {
@@ -20,10 +19,11 @@ export const useUserStore = defineStore('user', {
         data.pre_plant_3
       ].filter(url => url);
 
-      this.preVideoUrl = data.pre_video;
-
       this.currentStage = '1';
       
+    },
+    setStage(stage) {
+      this.currentStage = stage;
     },
     async reset() {
       if (this.studentId) {

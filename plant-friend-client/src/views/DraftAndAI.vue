@@ -82,7 +82,7 @@
             @click="goToStage4"
             :disabled="!hasAIFeedback"
           >
-            我已阅读评语，进入环节 4 魔法资源包
+            我已阅读评语，进入魔法资源包
           </van-button>
         </div>
       </div>
@@ -111,6 +111,10 @@ const aiFeedbackText = ref('');
 
 // --- 1. 拍照上传云端 ---
 const afterRead = async (file) => {
+
+  const randomDelay = Math.floor(Math.random() * 2000);
+  await new Promise(resolve => setTimeout(resolve, randomDelay));
+
   file.status = 'uploading';
   file.message = '正在上传...';
   
@@ -167,12 +171,12 @@ const getAIFeedback = async () => {
 
 // --- 3. 进入环节 4 ---
 const goToStage4 = () => {
-  userStore.currentStage = '4';
+  userStore.setStage('4');
 };
 </script>
 
 <style scoped>
-.stage-container { height: 100vh; display: flex; flex-direction: column; background-color: #f7f8fa; }
+.stage-container { height: 100%; display: flex; flex-direction: column; background-color: #f7f8fa; }
 .split-layout { flex: 1; display: flex; overflow: hidden; }
 
 /* 左侧引导区 */

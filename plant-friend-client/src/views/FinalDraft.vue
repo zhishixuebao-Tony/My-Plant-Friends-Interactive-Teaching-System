@@ -2,7 +2,7 @@
   <div class="stage-container">
     <van-nav-bar title="环节 5：定稿上传与荣誉时刻" fixed placeholder border />
 
-    <div class="split-layout" v-if="!isAllDone">
+    <div class="split-layout" v-if="!userStore.isFinalSubmitted">
       <!-- ================= 左侧：最后鼓励 ================= -->
       <div class="left-panel">
         <div class="reward-guide">
@@ -61,7 +61,7 @@
     </div>
 
     <!-- ================= 核心：电子奖状与撒花展示区 ================= -->
-    <div class="certificate-container" v-if="isAllDone">
+    <div class="certificate-container" v-else>
       <div class="certificate-card">
         <div class="cert-border">
           <div class="cert-content">
@@ -123,6 +123,10 @@ const onDelete = () => { isUploadSuccess.value = false; uploadedUrl.value = ''; 
 
 // --- 最终提交并触发撒花 ---
 const onFinalSubmit = async () => {
+
+  const randomDelay = Math.floor(Math.random() * 2000);
+  await new Promise(resolve => setTimeout(resolve, randomDelay));
+
   isSubmitting.value = true;
   try {
     await axios.post('/api/student/stage5/final', {
@@ -130,12 +134,18 @@ const onFinalSubmit = async () => {
       img_url: uploadedUrl.value
     });
 
-    // 1. 切换状态显示奖状
-    isAllDone.value = true;
+    userStore.finishAll();
 
     // 2. 触发撒花特效 (循环撒三次，更震撼)
     triggerConfetti();
-    
+
+  onMounted(() => {
+  // 如果刷新后发现已经提交过了，可以自动再撒一小次花
+    if (userStore.isFinalSubmitted) {
+    triggerConfetti(); 
+    }
+  });
+
     showToast({ message: '太棒了！你真了不起！', type: 'success' });
   } catch (err) {
     showToast('提交失败');
@@ -143,6 +153,7 @@ const onFinalSubmit = async () => {
     isSubmitting.value = false;
   }
 };
+
 
 // 撒花函数
 const triggerConfetti = () => {
@@ -163,7 +174,7 @@ const shareCert = () => showToast('老师已在主屏幕展示你的荣誉！');
 </script>
 
 <style scoped>
-.stage-container { height: 100vh; display: flex; flex-direction: column; background-color: #f7f8fa; }
+.stage-container { height: 100%; display: flex; flex-direction: column; background-color: #f7f8fa; }
 .split-layout { flex: 1; display: flex; overflow: hidden; }
 
 /* 左侧奖励引导 */

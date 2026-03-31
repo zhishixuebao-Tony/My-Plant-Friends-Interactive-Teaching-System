@@ -1,35 +1,38 @@
-'''import dashscope
-from app.core.config import settings
+import httpx
+import json
 
-dashscope.api_key = settings.DASHSCOPE_API_KEY
+# 配置你的真实 Token 和 ID
+COZE_PAT_TOKEN = "pat_AYkP1iVcd7M1Wib2v2CzDFMAdQrYHXqHpK8gN9fkTBiTTjd9KOuuMYCFuIUKaCsy"
+WORKFLOW_ID = "7622502061725253673"
+COZE_API_URL = "https://api.coze.cn/v1/workflow/run"
 
-def generate_ai_evaluation(student_data: dict) -> str:
-    """生成模块五的个性化 AI 评价"""
-    prompt = f"""
-    你是一位小学科学老师。根据该学生本节课的数据，写一段50字左右的鼓励性个性化评价。
-    数据如下：共上传了{student_data['uploads']}份记录，获得了{student_data['flowers']}朵花/星星，
-    互评活跃度为{student_data['interactions']}次。
-    请用活泼可爱、充满鼓励的语气。
+async def get_coze_workflow_feedback(img_url: str, student_name: str):
     """
-    response = dashscope.Generation.call(
-        model=dashscope.Generation.Models.qwen_turbo,
-        messages=[{'role': 'user', 'content': prompt}]
-    )
-    return response.output.choices[0]['message']['content']'''
-# 测试版：移除 dashscope 的真实调用
-# import dashscope
-from app.core.config import settings
+    专门调用 Coze 工作流获取批改建议
+    """
+    headers = {
+        "Authorization": f"Bearer {COZE_PAT_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "workflow_id": WORKFLOW_ID,
+        "parameters": {
+            "IMG": img_url,
+            "user_name": student_name
+        }
+    }
 
-def generate_ai_evaluation(student_data: dict) -> str:
-    """[本地测试版 Mock] 模拟生成 AI 个性化评价"""
-    
-    print(f"🤖 [Mock AI] 正在为学生生成假评语，参考数据: {student_data}")
-    
-    # 直接返回一句固定的话，让前端能展示出效果即可
-    mock_comment = (
-        f"【AI模拟评语】这位同学太棒啦！"
-        f"你上传了 {student_data.get('uploads', 0)} 份记录，"
-        f"获得了 {student_data.get('flowers', 0)} 朵小红花，"
-        f"继续保持对大自然的好奇心哦！"
-    )
-    return mock_comment
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            response = await client.post(COZE_API_URL, headers=headers, json=payload)
+            if response.status_code == 200:
+                res_json = response.json()
+                if res_json.get("code") == 0:
+                    # 返回的是工作流的 data 结果
+                    return str(res_json.get("data"))
+            print(f"❌ AI 接口返回异常: {response.text}")
+            return None
+        except Exception as e:
+            print(f"❌ AI 请求发生异常: {e}")
+            return None

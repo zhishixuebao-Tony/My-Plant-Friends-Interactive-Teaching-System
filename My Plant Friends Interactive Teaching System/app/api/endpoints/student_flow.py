@@ -75,7 +75,6 @@ async def student_login(req: LoginReq):
             "pre_plant_1": student.get("pre_plant_1", ""),        # 植物1
             "pre_plant_2": student.get("pre_plant_2", ""),        # 植物2
             "pre_plant_3": student.get("pre_plant_3", ""),        # 植物3
-            "pre_video": student.get("pre_video", "")             # 视频
         }
     }
 

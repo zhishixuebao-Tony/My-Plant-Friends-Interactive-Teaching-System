@@ -77,18 +77,39 @@ onMounted(() => {
 
 <style>
 /* 基础复位 */
-body { margin: 0; background-color: #f7f8fa; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #f7f8fa;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
 
 .app-main {
-  min-height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .content-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* 调试工具栏样式：固定在顶部，方便你测试 */
@@ -102,6 +123,7 @@ body { margin: 0; background-color: #f7f8fa; }
   align-items: center;
   font-size: 12px;
   z-index: 300;
+  flex-shrink: 0;
 }
 
 .dev-toolbar button {

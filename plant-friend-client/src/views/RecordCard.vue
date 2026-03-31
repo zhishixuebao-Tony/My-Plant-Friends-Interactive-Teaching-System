@@ -9,7 +9,7 @@
           
           <div class="panel-header-simple">对照植物实物，修改记录卡</div>
 
-          <!-- 上方：植物照片轮播卡片 (复用环节 1 设计) -->
+          <!-- 上方：植物照片轮播卡片  -->
           <div class="media-card" v-if="userStore.prePlantPhotos && userStore.prePlantPhotos.length > 0">
             <div class="card-title">
               <van-icon name="photo-o" color="#07c160" /> 我的植物档案
@@ -27,21 +27,6 @@
               </van-swipe-item>
             </van-swipe>
           </div>
-
-          <!-- 下方：观察视频卡片 -->
-          <div class="media-card" v-if="userStore.preVideoUrl">
-            <div class="card-title">
-              <van-icon name="video-o" color="#ff976a" /> 动态观察记录
-            </div>
-            
-            <div class="video-cover" @click="showVideoModal = true">
-              <div class="play-button">
-                <van-icon name="play" size="40" color="#fff" />
-              </div>
-              <span class="cover-text">点击播放高清视频</span>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -70,7 +55,7 @@
             </van-checkbox-group>
           </div>
 
-          <!-- 2. 拍照上传区域 (美化版) -->
+          <!-- 2. 拍照上传区域 -->
           <div class="card-section">
             <div class="section-title">📸 拍照上传修改后的记录卡：</div>
             
@@ -111,26 +96,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ================= 视频专属全屏弹窗 ================= -->
-    <van-popup 
-      v-model:show="showVideoModal" 
-      closeable 
-      round 
-      class="video-popup"
-      @closed="onVideoClose"
-      teleport="body"
-    >
-      <div class="popup-header">植物观察视频</div>
-      <video
-        ref="videoPlayer"
-        :src="userStore.preVideoUrl"
-        controls
-        playsinline
-        preload="metadata"
-        class="full-video"
-      ></video>
-    </van-popup>
   </div>
 </template>
 
@@ -150,10 +115,6 @@ const isSubmitting = ref(false);
 const isUploadSuccess = ref(false);
 const uploadedUrl = ref('');
 
-// 视频弹窗控制
-const showVideoModal = ref(false);
-const videoPlayer = ref(null);
-
 // 评价选项
 const evalOptions = [
   '评价一：能真实记录植物特点',
@@ -169,12 +130,6 @@ const openImagePreview = (startIndex) => {
     startPosition: startIndex,
     closeable: true,
   });
-};
-
-const onVideoClose = () => {
-  if (videoPlayer.value) {
-    videoPlayer.value.pause();
-  }
 };
 
 const toggleEval = (val) => {
@@ -213,6 +168,9 @@ const onDelete = () => {
 
 const onFinalSubmit = async () => {
   if (!isUploadSuccess.value) return showToast('请先拍照上传记录卡哦');
+
+  const randomDelay = Math.floor(Math.random() * 2000);
+  await new Promise(resolve => setTimeout(resolve, randomDelay));
   
   isSubmitting.value = true;
   try {
@@ -223,7 +181,7 @@ const onFinalSubmit = async () => {
     });
     
     showToast({ message: '记录卡提交成功！', type: 'success' });
-    userStore.currentStage = '3'; 
+    userStore.setStage('3');
   } catch (err) {
     console.error(err);
     showToast('提交失败，请重试');
@@ -236,7 +194,7 @@ const onFinalSubmit = async () => {
 <style scoped>
 /* ================= 整体布局 ================= */
 .stage-container {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-color: #f7f8fa;
@@ -295,22 +253,6 @@ const onFinalSubmit = async () => {
   color: white; font-size: 13px; padding: 20px 10px 10px; text-align: center; pointer-events: none; 
 }
 
-/* 视频封面样式 */
-.video-cover {
-  width: 100%; height: 180px;
-  background: linear-gradient(135deg, #3a3a3a 0%, #121212 100%);
-  border-radius: 12px; display: flex; flex-direction: column;
-  justify-content: center; align-items: center; cursor: pointer;
-  transition: transform 0.15s; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-}
-.video-cover:active { transform: scale(0.98); }
-.play-button {
-  width: 64px; height: 64px; border: 2px solid rgba(255,255,255,0.9);
-  border-radius: 50%; display: flex; justify-content: center; align-items: center;
-  margin-bottom: 12px; background: rgba(0,0,0,0.4);
-}
-.cover-text { color: #fff; font-size: 14px; letter-spacing: 1px; }
-
 /* ================= 右侧：交互面板 ================= */
 .right-panel {
   flex: 1; background-color: #fff; display: flex; flex-direction: column;
@@ -355,11 +297,6 @@ const onFinalSubmit = async () => {
 .action-footer {
   padding: 20px; background-color: #fff; box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
 }
-
-/* 视频弹窗 */
-.video-popup { width: 90%; max-width: 500px; background: #000; border-radius: 16px; overflow: hidden; }
-.popup-header { text-align: center; font-size: 16px; color: #fff; padding: 16px; background: #222; }
-.full-video { width: 100%; max-height: 70vh; display: block; }
 
 /* Vant 上传图片预览的圆角处理 */
 :deep(.van-uploader__preview-image) { border-radius: 12px; width: 160px; height: 160px; object-fit: cover; }

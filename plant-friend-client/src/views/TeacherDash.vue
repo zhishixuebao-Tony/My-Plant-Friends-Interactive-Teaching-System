@@ -5,7 +5,7 @@
     <div class="main-content">
       
       <!-- 上半部分：学生在线状态矩阵 -->
-      <div class="section-title">全班学生在线状态 (<span class="highlight">{{ stats.online }}</span>/50)</div>
+      <div class="section-title">全班学生在线状态 (<span class="highlight">{{ stats.online }}</span>/46)</div>
       <div class="matrix-grid">
         <div 
           v-for="student in studentList" 
@@ -104,8 +104,8 @@
         
         <div class="scroll-body">
           
-          <!-- ================= 核心修复：课前素材与视频区 ================= -->
-          <div class="module-title">🌿 课前准备：植物照片与视频</div>
+          <!-- ================= 核心修复：课前素材区 ================= -->
+          <div class="module-title">🌿 课前准备：植物照片</div>
           <div class="pre-media-box">
             <!-- 3张照片 -->
             <div class="plant-photos" v-if="activeData.pre_plant_1 || activeData.pre_plant_2 || activeData.pre_plant_3">
@@ -114,12 +114,6 @@
               <van-image v-if="activeData.pre_plant_3" :src="activeData.pre_plant_3" fit="cover" class="p-img" @click="preview(activeData.pre_plant_3)" />
             </div>
             <div v-else class="empty-text">该生暂无预置植物照片</div>
-
-            <!-- 课前视频播放按钮 -->
-            <div class="t-video-btn" v-if="activeData.pre_video" @click="showVideoModal = true">
-              <van-icon name="play-circle" size="24" color="#fff" />
-              <span>播放课前观察视频</span>
-            </div>
           </div>
 
           <!-- ================= 核心修复：记录卡与写作成长轨迹 ================= -->
@@ -165,27 +159,6 @@
         </div>
       </div>
     </van-popup>
-
-    <!-- ================= 教师端专属：视频播放弹窗 ================= -->
-    <van-popup 
-      v-model:show="showVideoModal" 
-      closeable 
-      round 
-      class="video-popup"
-      @closed="onVideoClose"
-      teleport="body"
-    >
-      <div class="popup-header">课前观察视频</div>
-      <video
-        ref="videoPlayer"
-        :src="activeData?.pre_video"
-        controls
-        playsinline
-        preload="metadata"
-        class="full-video"
-      ></video>
-    </van-popup>
-
   </div>
 </template>
 
@@ -206,9 +179,6 @@ const showDrawer = ref(false);
 const activeData = ref(null);
 const detailLoading = ref(false);
 
-// 视频弹窗控制
-const showVideoModal = ref(false);
-const videoPlayer = ref(null);
 
 // ================= 核心：拉取大屏数据 =================
 const fetchDashboardData = async () => {
@@ -326,7 +296,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.teacher-container { min-height: 100vh; background-color: #f2f3f5; padding-bottom: 50px; }
+.teacher-container { height: 100%; background-color: #f2f3f5; display: flex; flex-direction: column; }
 .main-content { padding: 25px; }
 
 .section-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 20px; border-left: 5px solid #07c160; padding-left: 12px; }
@@ -363,7 +333,7 @@ onUnmounted(() => {
 
 /* 详情抽屉区 */
 .loading-box { height: 100%; display: flex; justify-content: center; align-items: center; }
-.scroll-body { padding: 20px; overflow-y: auto; height: calc(100vh - 46px); background: #f7f8fa; }
+.scroll-body { padding: 20px; overflow-y: auto; height: 100%; background: #f7f8fa; }
 
 .module-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 15px; padding-left: 5px; border-left: 4px solid #1989fa; }
 
@@ -373,13 +343,6 @@ onUnmounted(() => {
 .p-img { flex: 1; height: 110px; border-radius: 8px; overflow: hidden; border: 1px solid #ebedf0; cursor: pointer; }
 .empty-text { font-size: 13px; color: #999; text-align: center; padding: 20px; }
 
-/* 新增：视频播放按钮 */
-.t-video-btn {
-  background: linear-gradient(90deg, #323233, #4b4b4b);
-  color: #fff; padding: 12px; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 10px;
-  cursor: pointer; font-size: 15px; transition: transform 0.1s;
-}
-.t-video-btn:active { transform: scale(0.98); }
 
 .img-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .img-item { background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
@@ -391,8 +354,4 @@ onUnmounted(() => {
 .ai-title { font-weight: bold; color: #d48806; margin-bottom: 10px; }
 .ai-text { line-height: 1.6; color: #ad6800; font-size: 15px; white-space: pre-wrap; }
 
-/* 视频弹窗 */
-.video-popup { width: 90%; max-width: 500px; background: #000; border-radius: 16px; overflow: hidden; }
-.popup-header { text-align: center; font-size: 16px; color: #fff; padding: 16px; background: #222; }
-.full-video { width: 100%; max-height: 70vh; display: block; }
 </style>

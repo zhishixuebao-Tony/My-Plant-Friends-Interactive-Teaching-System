@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     # 预加载的图片，格式为：{"01": "https://xxx.jpg", "02": "https://xxx.jpg", ...}
     PRELOAD_MEDIA: dict = {f"{i:02d}": f"https://via.placeholder.com/300?text=Plant_{i}" for i in range(1, 51)}
 
-    # 别忘了这个（如果你要测环节3）
-    DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", "")
+    # Coze API 配置
+    COZE_API_KEY: str = os.getenv("COZE_API_KEY", "")
+    COZE_AGENT_ID: str = os.getenv("COZE_AGENT_ID", "")
+    COZE_API_ENDPOINT: str = os.getenv("COZE_API_ENDPOINT", "https://api.coze.cn/v1/chat/completions")
 
 settings = Settings()

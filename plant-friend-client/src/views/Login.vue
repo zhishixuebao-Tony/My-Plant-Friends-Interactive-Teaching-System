@@ -121,18 +121,16 @@ const onPreLogin = async () => {
 const onFinalConfirm = () => {
   if (!studentFullData.value) return;
 
-  // 【关键修复】使用 studentFullData 存储的值，避免 res 未定义的报错
   userStore.setUserInfo({
     student_id: studentFullData.value.student_id,
     student_name: studentFullData.value.student_name,
     pre_plant_1: studentFullData.value.pre_plant_1, 
     pre_plant_2: studentFullData.value.pre_plant_2,
-    pre_plant_3: studentFullData.value.pre_plant_3,
-    pre_video: studentFullData.value.pre_video 
+    pre_plant_3: studentFullData.value.pre_plant_3
   });
   
   showToast('登录成功！');
-  userStore.currentStage = '1'; 
+  userStore.setStage('1'); 
 };
 
 const handleTeacherLogin = async () => {
@@ -157,13 +155,39 @@ const handleTeacherLogin = async () => {
 
 <style scoped>
 /* 保持原样 */
-.login-page { min-height: 100vh; background-color: #f7f8fa; }
-.login-body { padding: 60px 30px; }
+.login-page { 
+  height: 100%;
+  background-color: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+}
+.login-body { 
+  flex: 1;
+  padding: 60px 30px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
 .header-box { text-align: center; margin-bottom: 40px; }
-.form-card { background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.form-card { 
+  background: white; 
+  padding: 30px 20px; 
+  border-radius: 16px; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-top: auto;
+}
 .large-input { font-size: 24px; margin-bottom: 30px; border: 1px solid #ebedf0; border-radius: 8px; }
 .confirm-box { padding: 30px; text-align: center; }
 .name-display { color: #07c160; font-size: 32px; margin: 10px 0; }
-.teacher-entrance { margin-top: 50px; text-align: center; color: #969799; font-size: 14px; cursor: pointer; padding: 10px; }
+.teacher-entrance { 
+  margin-top: 20px; 
+  margin-bottom: 20px;
+  text-align: center; 
+  color: #969799; 
+  font-size: 14px; 
+  cursor: pointer; 
+  padding: 10px;
+  flex-shrink: 0;
+}
 .teacher-entrance:active { color: #07c160; }
 </style>

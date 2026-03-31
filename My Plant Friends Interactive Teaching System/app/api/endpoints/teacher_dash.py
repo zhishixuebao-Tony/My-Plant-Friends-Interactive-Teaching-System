@@ -79,7 +79,6 @@ async def get_one_student_detail(student_id: str):
         "pre_plant_1": student.get("pre_plant_1", ""),
         "pre_plant_2": student.get("pre_plant_2", ""),
         "pre_plant_3": student.get("pre_plant_3", ""),
-        "pre_video": student.get("pre_video", ""), # 确保下发视频
         
         # --- 流程产出图片 ---
         "record_card_img": student.get("record_card_img", ""),

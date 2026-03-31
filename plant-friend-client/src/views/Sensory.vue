@@ -28,21 +28,6 @@
               </van-swipe-item>
             </van-swipe>
           </div>
-
-          <!-- 下方：观察视频卡片 -->
-          <div class="media-card" v-if="userStore.preVideoUrl">
-            <div class="card-title">
-              <van-icon name="video-o" color="#ff976a" /> 动态观察记录
-            </div>
-            
-            <!-- 视频封面（解决黑屏且美观） -->
-            <div class="video-cover" @click="showVideoModal = true">
-              <div class="play-button">
-                <van-icon name="play" size="40" color="#fff" />
-              </div>
-              <span class="cover-text">点击播放高清视频</span>
-            </div>
-          </div>
           
           <!-- 无数据时的缺省提示 -->
           <div v-if="(!userStore.prePlantPhotos || userStore.prePlantPhotos.length === 0) && !userStore.preVideoUrl" class="empty-hint">
@@ -93,26 +78,6 @@
         </div>
       </div>
     </div>
-
-    <!-- ================= 视频专属全屏弹窗 ================= -->
-    <van-popup 
-      v-model:show="showVideoModal" 
-      closeable 
-      round 
-      class="video-popup"
-      @closed="onVideoClose"
-      teleport="body"
-    >
-      <div class="popup-header">植物观察视频</div>
-      <video
-        ref="videoPlayer"
-        :src="userStore.preVideoUrl"
-        controls
-        playsinline
-        preload="metadata"
-        class="full-video"
-      ></video>
-    </van-popup>
   </div>
 </template>
 
@@ -126,10 +91,6 @@ const userStore = useUserStore();
 const loading = ref(false);
 const checkedItems = ref([]);
 
-// --- 弹窗与多媒体控制 ---
-const showVideoModal = ref(false);
-const videoPlayer = ref(null); 
-
 const openImagePreview = (startIndex) => {
   if (!userStore.prePlantPhotos || userStore.prePlantPhotos.length === 0) return;
   showImagePreview({
@@ -137,12 +98,6 @@ const openImagePreview = (startIndex) => {
     startPosition: startIndex,
     closeable: true,
   });
-};
-
-const onVideoClose = () => {
-  if (videoPlayer.value) {
-    videoPlayer.value.pause(); 
-  }
 };
 
 // --- 右侧答题区逻辑 ---
@@ -173,7 +128,7 @@ const onNextStep = async () => {
     showToast({ message: '记录成功！', type: 'success' });
     
     // 平滑过渡到环节 2
-    userStore.currentStage = '2';
+    userStore.setStage('2');
   } catch (err) {
     console.error("提交失败:", err);
     showToast('网络有点慢，请重试');
@@ -186,7 +141,7 @@ const onNextStep = async () => {
 <style scoped>
 /* ================= 整体布局 ================= */
 .stage-container {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-color: #f7f8fa;
@@ -262,25 +217,6 @@ const onNextStep = async () => {
   padding: 20px 10px 10px;
   text-align: center;
   pointer-events: none; 
-}
-
-/* 视频封面样式 */
-.video-cover {
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(135deg, #3a3a3a 0%, #121212 100%);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 0.15s;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-}
-
-.video-cover:active {
-  transform: scale(0.98);
 }
 
 .play-button {
@@ -364,28 +300,5 @@ const onNextStep = async () => {
   padding: 20px;
   background-color: #fff;
   box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
-}
-
-/* ================= 视频弹窗样式 ================= */
-.video-popup {
-  width: 90%;
-  max-width: 500px; /* 限制在平板上的最大宽度 */
-  background: #000;
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.popup-header {
-  text-align: center;
-  font-size: 16px;
-  color: #fff;
-  padding: 16px;
-  background: #222;
-}
-
-.full-video {
-  width: 100%;
-  max-height: 70vh;
-  display: block;
 }
 </style>

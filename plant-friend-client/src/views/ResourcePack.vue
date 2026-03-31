@@ -151,7 +151,7 @@ const submitStage4 = async () => {
     });
     
     // 顺利进入环节 5
-    userStore.currentStage = '5'; 
+    userStore.setStage('5');
   } catch (err) {
     console.error("提交环节4失败:", err);
     showToast('网络有点小脾气，请重试');
@@ -163,7 +163,7 @@ const submitStage4 = async () => {
 
 <style scoped>
 .stage-container {
-  min-height: 100vh;
+  height: 100%;
   background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
