@@ -38,7 +38,6 @@ class DraftSubmitReq(BaseModel):
 
 class FinalSubmitReq(BaseModel):
     student_id: str
-    img_url: str
 
 # --- 2. 核心业务接口修正 ---
 
@@ -156,11 +155,10 @@ async def track_resource_click(student_id: str, res_id: str):
 
 @router.post("/stage5/final")
 async def submit_stage5(req: FinalSubmitReq):
-    """环节5：提交最终定稿照片"""
+    """环节5：完成本课程"""
     await db_instance.db.students.update_one(
         {"student_id": req.student_id},
         {"$set": {
-            "final_img": req.img_url,
             "current_stage": "5",  # 更新为定稿阶段
             "last_active_time": datetime.now()
         }}
@@ -184,7 +182,6 @@ async def get_student_info(student_id: str):
             "pre_plant_1": student.get("pre_plant_1", ""),
             "pre_plant_2": student.get("pre_plant_2", ""),
             "pre_plant_3": student.get("pre_plant_3", ""),
-            "pre_video": student.get("pre_video", "")
         }
     raise HTTPException(status_code=404, detail="学生不存在")
 

@@ -4,63 +4,101 @@
 
     <div class="resource-layout">
       
-      <!-- 1. 顶部魔法资源展示 -->
+      <!-- 顶部魔法资源包展示 -->
       <div class="resource-header">
         <van-icon name="photo-o" color="#07c160" /> 
-        魔法资源图片 (点击放大查看)
+        魔法资源包 - 写作小妙招
       </div>
       
-      <div class="image-gallery">
-        <van-grid :column-num="3" gutter="10">
-          <van-grid-item 
-            v-for="(img, index) in mockResources" 
-            :key="index"
-            @click="onPreview(index)"
-            class="resource-grid-item"
+      <!-- 1. 资源包列表视图 -->
+      <div class="pack-list-view" v-if="!selectedPack">
+        <div class="pack-list-description">
+          <p>点击下方资源包，查看对应的写作小妙招图片资源</p>
+        </div>
+        
+        <div class="pack-grid">
+          <div 
+            v-for="pack in resourcePacks" 
+            :key="pack.id"
+            class="pack-card"
+            @click="selectPack(pack)"
           >
-            <van-image :src="img" radius="8" fit="cover" style="height: 120px;" />
-            <div class="img-tag">资源 {{ index + 1 }}</div>
-          </van-grid-item>
-        </van-grid>
+            <div class="pack-card-icon">
+              <van-icon :name="pack.icon" size="32" color="#1989fa" />
+            </div>
+            <div class="pack-card-content">
+              <h3 class="pack-card-title">{{ pack.title }}</h3>
+              <p class="pack-card-desc">{{ pack.description }}</p>
+              <div class="pack-card-meta">
+                <span class="image-count">
+                  <van-icon name="photo-o" size="14" />
+                  {{ pack.images.length }} 张图片
+                </span>
+                <span class="view-hint">点击查看 →</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 2. 习题板块 (知识小闯关) -->
-      <div class="quiz-section">
-        <div class="quiz-title">
-          <van-icon name="award-o" color="#f2bd27" /> 
-          知识小闯关
+      <!-- 2. 资源包详情视图 -->
+      <div class="pack-detail-view" v-else>
+        <div class="detail-header">
+          <van-button 
+            icon="arrow-left" 
+            type="primary" 
+            size="small" 
+            plain 
+            @click="selectedPack = null"
+            class="back-btn"
+          >
+            返回资源包列表
+          </van-button>
+          <div class="detail-title">
+            <van-icon :name="selectedPack.icon" color="#07c160" />
+            <h2>{{ selectedPack.title }}</h2>
+          </div>
+          <p class="detail-description">{{ selectedPack.description }}</p>
         </div>
-
-        <!-- 题 1：判断题 -->
-        <div class="quiz-card">
-          <p class="question-text">1. 植物生长不仅需要水分，还需要阳光和充足的营养。(判断题)</p>
-          <van-radio-group v-model="q1" direction="horizontal">
-            <van-radio name="正确">正确</van-radio>
-            <van-radio name="错误">错误</van-radio>
-          </van-radio-group>
+        
+        <div class="detail-content">
+          <!-- 图片资源展示 -->
+          <div v-if="selectedPack.images && selectedPack.images.length > 0">
+            <div class="image-count-hint">
+              <van-icon name="photo-o" /> 共 {{ selectedPack.images.length }} 张图片
+            </div>
+            <div class="image-gallery">
+              <van-grid :column-num="2" gutter="10">
+                <van-grid-item 
+                  v-for="(img, index) in selectedPack.images" 
+                  :key="index"
+                  @click="onPreview(selectedPack.id, index)"
+                  class="resource-grid-item"
+                >
+                  <van-image 
+                    :src="img.url" 
+                    radius="8" 
+                    fit="cover" 
+                    style="height: 140px;"
+                    :alt="img.name"
+                  />
+                  <div class="img-tag">{{ img.name }}</div>
+                </van-grid-item>
+              </van-grid>
+            </div>
+          </div>
           
-          <!-- 答案反馈区 -->
-          <div v-if="q1" class="ans-box" :class="q1 === '正确' ? 'right' : 'wrong'">
-            <span v-if="q1 === '正确'">✨ 太棒了！回答正确。</span>
-            <span v-else>💡 别灰心！阳光也是植物的好朋友哦。解析：植物的光合作用离不开阳光。</span>
+          <!-- 无图片提示 -->
+          <div v-else class="empty-images">
+            <van-icon name="photo-fail" size="50" color="#ebedf0" />
+            <p>该资源包暂无图片资源</p>
+          </div>
+          
+          <!-- 资源包提示 -->
+          <div class="pack-tip" v-if="selectedPack.tip">
+            💡 {{ selectedPack.tip }}
           </div>
         </div>
-
-        <!-- 题 2：选择题 -->
-        <div class="quiz-card">
-          <p class="question-text">2. 在描写植物朋友时，我们可以从哪些方面来描写？(选择题)</p>
-          <van-radio-group v-model="q2" direction="horizontal">
-            <van-radio name="A">A. 只有颜色</van-radio>
-            <van-radio name="B">B. 颜色、气味、样子、感受</van-radio>
-          </van-radio-group>
-          
-          <!-- 答案反馈区 -->
-          <div v-if="q2" class="ans-box" :class="q2 === 'B' ? 'right' : 'wrong'">
-            <span v-if="q2 === 'B'">✨ 你真聪明！观察非常全面。</span>
-            <span v-else>💡 差一点点就对啦！我们要全方位观察植物。正确答案是 B。</span>
-          </div>
-        </div>
-
       </div>
 
       <!-- 3. 底部提交 -->
@@ -70,12 +108,11 @@
           block
           round
           size="large"
-          :disabled="!q1 || !q2" 
           @click="submitStage4"
           :loading="loading"
           loading-text="正在保存进度..."
         >
-          完成闯关，去写定稿
+          查看完资源包，下一步
         </van-button>
       </div>
 
@@ -92,34 +129,83 @@ import { showImagePreview, showToast } from 'vant';
 const userStore = useUserStore();
 const loading = ref(false);
 
-// 答题状态
-const q1 = ref('');
-const q2 = ref('');
+// 当前选中的资源包
+const selectedPack = ref(null);
 
-// 模拟资源图片地址 (测试用，使用真实的占位图)
-const mockResources = [
-  'https://img.yzcdn.cn/vant/apple-1.jpg',
-  'https://img.yzcdn.cn/vant/apple-2.jpg',
-  'https://img.yzcdn.cn/vant/apple-3.jpg'
-];
+// 定义4个资源包，每个包只包含一张图片
+const resourcePacks = ref([
+  {
+    id: 'multi-aspect',
+    title: '多方面介绍',
+    icon: 'eye-o',
+    description: '多方面介绍植物朋友小妙招 - 从颜色、形状、大小等多角度观察植物',
+    tip: '试着从不同角度观察你的植物朋友，会有新发现哦！',
+    images: [
+      { name: '多方面观察技巧', url: '/resources/multi-aspect.jpg' }
+    ]
+  },
+  {
+    id: 'feeling',
+    title: '融入感受',
+    icon: 'smile-comment-o',
+    description: '融入感受小妙招 - 把对植物的情感写进作文里',
+    tip: '当你触摸叶子时，有什么感觉？闻到花香时，想到了什么？',
+    images: [
+      { name: '情感表达方法', url: '/resources/feeling.jpg' }
+    ]
+  },
+  {
+    id: 'orderly',
+    title: '有序介绍',
+    icon: 'orders-o',
+    description: '有序介绍植物朋友小妙招 - 从上到下、从远到近有条理地描写',
+    tip: '先写整体印象，再写局部细节，顺序很重要！',
+    images: [
+      { name: '有序描写步骤', url: '/resources/orderly.jpg' }
+    ]
+  },
+  {
+    id: 'vocabulary',
+    title: '优美词句',
+    icon: 'notes-o',
+    description: '优美词句积累卡 - 收集描写植物的精彩词语和句子',
+    tip: '把这些好词好句记下来，让你的作文更生动！',
+    images: [
+      { name: '词汇句子积累', url: '/resources/vocabulary.jpg' }
+    ]
+  }
+]);
 
 /**
- * 核心修复：点击图片放大预览，并静默上报点击次数
+ * 选择资源包
  */
-const onPreview = async (index) => {
+const selectPack = (pack) => {
+  selectedPack.value = pack;
+};
+
+/**
+ * 点击图片放大预览，并静默上报点击次数
+ */
+const onPreview = async (packId, index) => {
+  const pack = resourcePacks.value.find(p => p.id === packId);
+  if (!pack) return;
+  
+  // 获取当前资源包的所有图片URL
+  const imageUrls = pack.images.map(img => img.url);
+  
   // 1. 调用 Vant 预览大图
   showImagePreview({
-    images: mockResources,
+    images: imageUrls,
     startPosition: index,
-    closeable: true,              // 显示右上角关闭按钮
-    closeOnClickImage: true,      // 点击图片即可关闭
-    closeOnClickOverlay: true,    // 点击黑底背景关闭
-    teleport: 'body'              // 挂载到 body，防止被其他层级遮挡卡死
+    closeable: true,
+    closeOnClickImage: true,
+    closeOnClickOverlay: true,
+    teleport: 'body'
   });
 
   // 2. 向后端静默上报点击数据
-  // 注意：这里的名称必须严格拼写为 "资源 1"（中间有空格），才能和教师端表格对应上！
-  const resourceName = `资源 ${index + 1}`; 
+  // 格式：资源包名称 + 图片名称，例如："多方面介绍-颜色观察法"
+  const resourceName = `${pack.title}-${pack.images[index].name}`;
   
   try {
     // 调用后端留好的统计接口
@@ -130,14 +216,10 @@ const onPreview = async (index) => {
   }
 };
 
-/**
- * 提交环节 4
- */
+    /**
+     * 提交环节 4
+     */
 const submitStage4 = async () => {
-  if (!q1.value || !q2.value) {
-    return showToast('请先完成所有知识闯关题哦！');
-  }
-
   loading.value = true;
   try {
     // 告诉后端：该学生已完成环节 4
@@ -146,11 +228,11 @@ const submitStage4 = async () => {
     });
     
     showToast({
-      message: '知识闯关大成功！',
+      message: '资源包学习完成！',
       type: 'success'
     });
     
-    // 顺利进入环节 5
+    // 顺利进入环节 5（AI评语与荣誉时刻页面）
     userStore.setStage('5');
   } catch (err) {
     console.error("提交环节4失败:", err);
@@ -167,12 +249,32 @@ const submitStage4 = async () => {
   background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .resource-layout { 
-  padding: 20px; 
+  padding: 15px; 
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 120px); /* 考虑导航栏和地址栏空间 */
+}
+
+/* 平板适配 */
+@media (max-width: 1024px) {
+  .resource-layout {
+    max-height: calc(100vh - 100px);
+    padding: 12px;
+  }
+}
+
+/* 横向平板优化 */
+@media (max-width: 1366px) and (min-height: 1024px) and (orientation: portrait) {
+  .resource-layout {
+    max-height: calc(100vh - 140px);
+    padding: 20px;
+  }
 }
 
 .resource-header { 
@@ -185,80 +287,233 @@ const submitStage4 = async () => {
   gap: 8px;
 }
 
+/* 资源包列表视图样式 */
+.pack-list-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.pack-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* 默认单列，平板改为矩阵 */
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* 平板矩阵布局 */
+@media (min-width: 768px) {
+  .pack-grid {
+    grid-template-columns: repeat(2, 1fr); /* 平板2列 */
+  }
+}
+
+/* 横向平板大屏幕优化 */
+@media (min-width: 1024px) and (orientation: portrait) {
+  .pack-grid {
+    gap: 20px;
+  }
+}
+
+/* 手机端保持单列 */
+@media (max-width: 767px) {
+  .pack-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pack-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.pack-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  border-color: #e6f7ff;
+}
+
+.pack-card:active {
+  transform: translateY(0);
+}
+
+.pack-card-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.pack-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.pack-card-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 6px 0;
+}
+
+.pack-card-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.pack-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+}
+
+.view-hint {
+  font-size: 12px;
+  color: #07c160;
+  font-weight: 500;
+}
+
+/* 资源包详情视图样式 */
+.detail-header {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.back-btn {
+  margin-bottom: 16px;
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.detail-title h2 {
+  font-size: 22px;
+  color: #333;
+  margin: 0;
+}
+
+.detail-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.detail-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.image-count-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
 .image-gallery {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .resource-grid-item {
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: all 0.2s;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .resource-grid-item:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
+}
+
+.resource-grid-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .img-tag { 
-  font-size: 13px; 
-  color: #666; 
+  font-size: 12px; 
+  color: #555; 
   text-align: center; 
-  margin-top: 8px; 
-  background: #fff;
-  padding: 2px 10px;
-  border-radius: 10px;
+  margin-top: 6px; 
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 6px;
   border: 1px solid #ebedf0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.quiz-section { 
-  margin-top: 20px; 
-  padding-bottom: 20px;
-}
-
-.quiz-title { 
-  font-size: 20px; 
-  font-weight: bold; 
-  margin-bottom: 20px; 
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.quiz-card { 
-  background: #fff; 
-  padding: 20px; 
-  border-radius: 12px; 
+.empty-images {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  background: #fafafa;
+  border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-.question-text {
-  font-size: 16px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-top: 0;
-  margin-bottom: 15px;
+.empty-images p {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.pack-tip {
+  background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e8 100%);
+  border-left: 4px solid #07c160;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  margin-top: 20px;
   line-height: 1.5;
-}
-
-.ans-box { 
-  margin-top: 20px; 
-  padding: 12px 15px; 
-  border-radius: 8px; 
-  font-size: 15px; 
-  line-height: 1.6;
-}
-
-.ans-box.right { 
-  background: #f0f9eb; 
-  color: #67c23a; 
-  border: 1px solid #e1f3d8;
-}
-
-.ans-box.wrong { 
-  background: #fef0f0; 
-  color: #f56c6c; 
-  border: 1px solid #fde2e2;
 }
 
 .action-footer { 

@@ -1,5 +1,8 @@
-import uvicorn
-
 if __name__ == "__main__":
-    # 0.0.0.0 允许局域网平板访问
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, workers=4)
+    import uvicorn
+    
+    # --- 开发调试模式 ---
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 
+
+    # --- 46人实战/压测模式 ---
+    #uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False, workers=4)

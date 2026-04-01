@@ -33,11 +33,35 @@ export async function uploadImageFlow(studentId, moduleName, file) {
   return access_url; // 返回永久访问地址
 }
 
+// 环节3：保存初稿
+export const saveDraftApi = (studentId, imgUrl) => {
+  return axios.post('/api/student/stage3/save-draft', {
+    student_id: studentId,
+    img_url: imgUrl
+  });
+};
+
 // 环节3：提交初稿并请求 AI 评价
 export const submitDraftAiApi = (studentId, imgUrl) => {
-  return axios.post('/api/ai/stage3/submit-draft-and-ai', {
-    student_id: studentId,
-    draft_img_url: imgUrl
+  // 确保参数类型正确，避免422错误
+  const sid = String(studentId || '').trim();
+  const url = String(imgUrl || '').trim();
+  
+  console.log('提交AI评价参数:', { sid, url, original: { studentId, imgUrl } });
+  
+  return axios.post('/api/ai/stage3/submit-draft-ai', {
+    student_id: sid,
+    img_url: url
+  }).catch(error => {
+    console.error('AI评价请求失败:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        data: error.config?.data
+      }
+    });
+    throw error;
   });
 };
 
@@ -48,10 +72,14 @@ export const completeResourceApi = (studentId) => {
   });
 };
 
-// 环节5：提交最终定稿照片
-export const submitFinalApi = (studentId, imgUrl) => {
+// 环节5：完成本课程
+export const submitFinalApi = (studentId) => {
   return axios.post('/api/student/stage5/final', {
-    student_id: studentId,
-    img_url: imgUrl
+    student_id: String(studentId),
   });
+};
+
+// 获取学生信息
+export const getStudentInfoApi = (studentId) => {
+  return axios.get(`/api/student/student/info/${studentId}`);
 };

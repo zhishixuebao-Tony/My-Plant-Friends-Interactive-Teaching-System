@@ -154,40 +154,157 @@ const handleTeacherLogin = async () => {
 </script>
 
 <style scoped>
-/* 保持原样 */
+/* 平板优化登录页面 */
 .login-page { 
   height: 100%;
   background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .login-body { 
   flex: 1;
-  padding: 60px 30px;
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   overflow-y: auto;
 }
-.header-box { text-align: center; margin-bottom: 40px; }
+.header-box { 
+  text-align: center; 
+  margin-bottom: 25px; 
+}
+.header-box h1 {
+  font-size: 28px;
+  margin: 15px 0 8px;
+  color: #333;
+}
+.header-box p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
 .form-card { 
   background: white; 
-  padding: 30px 20px; 
+  padding: 25px 20px; 
   border-radius: 16px; 
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  margin-top: auto;
+  margin-top: 20px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
-.large-input { font-size: 24px; margin-bottom: 30px; border: 1px solid #ebedf0; border-radius: 8px; }
-.confirm-box { padding: 30px; text-align: center; }
-.name-display { color: #07c160; font-size: 32px; margin: 10px 0; }
+.large-input { 
+  font-size: 22px; 
+  margin-bottom: 25px; 
+  border: 2px solid #ebedf0; 
+  border-radius: 10px;
+  height: 56px;
+}
+.large-input :deep(.van-field__control) {
+  font-size: 22px;
+  text-align: center;
+  font-weight: 500;
+}
+.confirm-box { 
+  padding: 25px; 
+  text-align: center; 
+}
+.confirm-box p {
+  font-size: 18px;
+  margin: 10px 0;
+}
+.name-display { 
+  color: #07c160; 
+  font-size: 30px; 
+  margin: 15px 0; 
+  font-weight: bold;
+}
 .teacher-entrance { 
   margin-top: 20px; 
   margin-bottom: 20px;
   text-align: center; 
   color: #969799; 
-  font-size: 14px; 
+  font-size: 15px; 
   cursor: pointer; 
-  padding: 10px;
+  padding: 12px;
   flex-shrink: 0;
 }
-.teacher-entrance:active { color: #07c160; }
+.teacher-entrance:active { 
+  color: #07c160; 
+  background-color: rgba(7, 193, 96, 0.05);
+  border-radius: 8px;
+}
+
+/* 平板特定适配 */
+@media (max-width: 1024px) {
+  .login-body {
+    padding: 25px 15px;
+  }
+  
+  .header-box h1 {
+    font-size: 26px;
+  }
+  
+  .header-box p {
+    font-size: 15px;
+  }
+  
+  .form-card {
+    padding: 22px 18px;
+    max-width: 450px;
+  }
+  
+  .large-input {
+    font-size: 20px;
+    height: 52px;
+  }
+  
+  .name-display {
+    font-size: 28px;
+  }
+}
+
+/* 横向平板适配 */
+@media (max-width: 1366px) and (min-height: 1024px) and (orientation: portrait) {
+  .login-body {
+    padding: 40px 25px;
+  }
+  
+  .header-box h1 {
+    font-size: 32px;
+  }
+  
+  .header-box p {
+    font-size: 18px;
+  }
+  
+  .form-card {
+    max-width: 550px;
+    padding: 30px 25px;
+  }
+  
+  .large-input {
+    font-size: 24px;
+    height: 60px;
+  }
+  
+  .name-display {
+    font-size: 34px;
+  }
+}
+
+/* 按钮平板优化 */
+:deep(.van-button) {
+  font-size: 17px;
+  height: 52px;
+}
+
+@media (max-width: 1024px) {
+  :deep(.van-button) {
+    font-size: 16px;
+    height: 50px;
+  }
+}
 </style>
