@@ -1,110 +1,129 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import axios from 'axios';
+import { toDisplayImageUrl } from '../utils/imageProxy';
 
 export const useUserStore = defineStore('user', {
   state: () => {
-    // 尝试从 localStorage 恢复状态
     const savedState = localStorage.getItem('plant-friend-user-state');
-    const initialState = savedState ? JSON.parse(savedState) : null;
-    
+    let initialState = null;
+
+    if (savedState) {
+      try {
+        initialState = JSON.parse(savedState);
+      } catch (error) {
+        console.warn('Invalid local user state, clearing cache.', error);
+        localStorage.removeItem('plant-friend-user-state');
+      }
+    }
+
     return {
       studentId: initialState?.studentId || '',
       studentName: initialState?.studentName || '',
-      prePlantPhotos: [], // 不保存图片URL到本地存储，每次重新获取
+      prePlantPhotos: [],
+      stage1Stars: initialState?.stage1Stars ?? 1,
+      stage3Stars: initialState?.stage3Stars ?? 0,
       currentStage: initialState?.currentStage || '0',
-      finalSubmitted: initialState?.finalSubmitted || false  // 是否已提交最终阶段
+      finalSubmitted: initialState?.finalSubmitted || false,
     };
   },
-  
+
   getters: {
-    // 检查是否已领取奖状
-    hasFinalSubmitted: (state) => {
-      return state.finalSubmitted;
-    }
+    hasFinalSubmitted: (state) => state.finalSubmitted,
   },
-  
+
   actions: {
-    // 恢复完整状态（从后端数据）
+    mapStageForDb(stage) {
+      const stageText = String(stage);
+      if (stageText === '2') return '3';
+      if (stageText === '3') return '2';
+      return stageText;
+    },
+
+    async syncCurrentStage(stage) {
+      if (!this.studentId) return;
+      try {
+        await axios.post('/api/student/stage/sync', {
+          student_id: String(this.studentId),
+          current_stage: this.mapStageForDb(stage),
+        });
+      } catch (_) {}
+    },
+
     setUserInfo(data) {
       this.studentId = data.student_id;
       this.studentName = data.student_name;
-
-      this.prePlantPhotos = [
-        data.pre_plant_1,
-        data.pre_plant_2,
-        data.pre_plant_3
-      ].filter(url => url);
-
-      this.currentStage = '1';
-      
-      // 保存到本地存储
+      this.prePlantPhotos = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3].map((v) => toDisplayImageUrl(v)).filter(Boolean);
+      this.currentStage = 'welcome';
       this.saveToStorage();
+      this.syncCurrentStage('welcome');
     },
-    
-    // 切换阶段
+
     setStage(stage) {
       this.currentStage = stage;
       this.saveToStorage();
+      this.syncCurrentStage(stage);
     },
-    
-    // 重置（退出登录）
+
+    setStage3Stars(stars) {
+      this.stage3Stars = Math.max(0, Math.min(2, Number(stars) || 0));
+      this.saveToStorage();
+    },
+
     async reset() {
       if (this.studentId) {
         try {
           await axios.post('/api/student/stage0/logout', { student_id: this.studentId });
-        } catch (e) {}
+        } catch (_) {
+          // Ignore logout network errors.
+        }
       }
+
       this.studentId = '';
       this.studentName = '';
       this.prePlantPhotos = [];
+      this.stage1Stars = 1;
+      this.stage3Stars = 0;
       this.currentStage = '0';
-      
-      // 清除本地存储
+      this.finalSubmitted = false;
       localStorage.removeItem('plant-friend-user-state');
     },
-    
-    // 从存储中恢复植物照片（需要在组件中调用）
+
     async restorePlantPhotos() {
       if (!this.studentId) return;
-      
+
       try {
-        // 重新获取学生数据
         const res = await axios.post('/api/student/stage0/login', {
-          student_id: this.studentId
+          student_id: this.studentId,
         });
-        
-        if (res.data && res.data.status === 'success') {
+
+        if (res.data?.status === 'success') {
           const data = res.data.data;
-          this.prePlantPhotos = [
-            data.pre_plant_1,
-            data.pre_plant_2,
-            data.pre_plant_3
-          ].filter(url => url);
+          this.prePlantPhotos = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3].map((v) => toDisplayImageUrl(v)).filter(Boolean);
         }
       } catch (err) {
-        console.warn('恢复植物照片失败:', err);
-        // 如果无法恢复，保持空数组
+        console.warn('Failed to restore plant photos:', err);
       }
     },
-    
-    // 私有方法：保存状态到 localStorage
+
     saveToStorage() {
       const stateToSave = {
         studentId: this.studentId,
         studentName: this.studentName,
+        stage1Stars: this.stage1Stars,
+        stage3Stars: this.stage3Stars,
         currentStage: this.currentStage,
-        finalSubmitted: this.finalSubmitted
-        // 注意：不保存 prePlantPhotos，因为需要从服务器重新获取
+        finalSubmitted: this.finalSubmitted,
       };
-      
+
       localStorage.setItem('plant-friend-user-state', JSON.stringify(stateToSave));
     },
-    
-    // 完成所有阶段
+
     finishAll() {
       this.currentStage = '5';
       this.finalSubmitted = true;
       this.saveToStorage();
-    }
-  }
+      this.syncCurrentStage('5');
+    },
+  },
 });
+

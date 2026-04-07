@@ -17,7 +17,7 @@ export default defineConfig({
     proxy: {
       // 这里的 /api 会匹配你代码里的 axios.get('/api/...')
       '/api': {
-        target: 'http://127.0.0.1:8000', // 确保指向你的 Python 后端
+        target: 'http://127.0.0.1:8000', 
         //target: 'http://192.168.100.102:8000' ,
         changeOrigin: true,
       },

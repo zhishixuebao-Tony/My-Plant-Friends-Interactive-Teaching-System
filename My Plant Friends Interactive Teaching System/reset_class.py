@@ -1,65 +1,89 @@
-import asyncio
+﻿import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# --- 配置区 ---
-MONGO_DETAILS = "mongodb://localhost:27017" 
-DB_NAME = "composition_db"                       
+# MongoDB 配置
+MONGO_DETAILS = "mongodb://localhost:27017"
+DB_NAME = "composition_db"
+
 
 async def reset_class_data():
     """
-    运维级脚本：一键清空全班上课产生的过程数据和状态。
-    保留：学号、姓名、教师密码、课前预置的照片和视频。
+    一键重置课堂过程数据（不删除学生基础资料）。
+
+    会保留：
+    - student_id, student_name
+    - pre_record_card, pre_plant_1, pre_plant_2, pre_plant_3（课前素材）
+    - admin_config（教师密码配置）
+
+    会重置（保留字段不动）：
+    - 登录状态与进度
+    - 环节 1/3/5 的勾选与星数
+    - 资源点击统计与完成状态
+    - 课堂过程状态与统计字段（AI 兼容字段）
+    - 旧的拍照上传产物字段会直接删除
     """
-    print("⚠️ 正在连接数据库...")
+    print("正在连接数据库...")
     client = AsyncIOMotorClient(MONGO_DETAILS)
     db = client[DB_NAME]
-    
-    # 确认是否真的要重置
-    confirm = input("🚨 危险操作：即将清空全班提交的作业、评价和通关记录！\n确认执行请输入 'yes'：")
-    if confirm.lower() != 'yes':
-        print("已取消重置操作。")
+
+    confirm = input(
+        "危险操作：将重置全班课堂过程数据（保留学号姓名与课前素材）。\n"
+        "确认执行请输入 'yes'："
+    )
+    if confirm.strip().lower() != "yes":
+        print("已取消重置。")
         client.close()
         return
 
-    print("正在清空课堂数据...")
-    
-    # 执行批量更新
-    result = await db.students.update_many(
-        {}, # 空条件，代表更新集合中的所有文档
-        {"$set": {
-            # 1. 状态归零
-            "is_logged_in": False,          # 全部强制下线 (大屏格子变灰)
-            "current_stage": "0",           # 进度回到起点
-            
-            # 2. 环节 1-2 数据清空
-            "sensory_evaluations": [],      # 清空感官勾选
-            "dimension_evaluations": [],    # 清空评价维度勾选
-            "record_card_img": "",          # 清空课中修改的记录卡照片
-            
-            # 3. 环节 3 数据清空
-            "draft_img": "",                # 清空初稿照片
-            "has_completed_ai": False,      # 清空 AI 批改状态 (大屏环形图归零)
-            "ai_feedback_text": "",         # 清空 AI 评语
-            
-            # 4. 环节 4 数据清空
-            "has_viewed_resources": False,  # 清空资源包通关状态 (大屏通关人数归零)
-            "resource_click_stats": {},     # 清空资源点击热度
-            
-            # 5. 环节 5 数据清空 (🏆 奖杯消失的关键)
-            "final_img": "",                # 清空最终定稿照片
-            
-            # --- 注意：绝不触碰 pre_plant_1 等课前预置字段 ---
-        }
-        }
-    )
+    print("正在重置 students 集合中的课堂数据...")
 
-    print(f"✅ 成功重置了 {result.modified_count} 位学生的课堂数据！")
-    print("🎉 大屏上的奖杯、在线状态和统计表格已全部归零。")
-    
-    
+    set_fields = {
+        # 0. 登录与进度
+        "is_logged_in": False,
+        "current_stage": "0",
+
+        # 1. 环节 1：感官观察
+        "sensory_evaluations": [],
+        "stage1_stars": 0,
+
+        # 2. 环节 3：记录卡（命名互换后，数据库仍按既有字段）
+        "dimension_evaluations": [],
+        "stage3_stars": 0,
+
+        # 3. 资源包与相关统计
+        "has_viewed_resources": False,
+        "resource_click_stats": {},
+
+        # 4. 环节 5：试写与证书
+        "stage5_checks": [],
+        "stage5_stars": 0,
+        "total_stars": 0,
+        "has_claimed_certificate": False,
+
+        # 5. 兼容历史字段（如仍存在则一起清空）
+        "has_completed_ai": False,
+        "ai_feedback_text": "",
+        "last_active_time": None,
+    }
+
+    # 历史残留字段与已停用字段：直接删除
+    unset_fields = {
+        "stage_total_stars": "",
+        "finalStars": "",
+        "totalStars": "",
+        "final_stars": "",
+        "record_card_img": "",
+        "draft_img": "",
+        "final_img": "",
+    }
+
+    result = await db.students.update_many({}, {"$set": set_fields, "$unset": unset_fields})
+
+    print(f"重置完成：共更新 {result.modified_count} 位学生。")
+    print("说明：学号、姓名、课前记录卡与课前植物照片均已保留。")
 
     client.close()
 
+
 if __name__ == "__main__":
-    # 运行异步函数
     asyncio.run(reset_class_data())

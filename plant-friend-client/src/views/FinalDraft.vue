@@ -1,589 +1,580 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <van-nav-bar title="环节 5：AI评语与荣誉时刻" fixed placeholder border />
+    <div class="top-nav">我与植物朋友共成长</div>
 
-    <div class="split-layout" v-if="!showCertificate">
-      <!-- ================= 左侧：AI评语展示 ================= -->
-      <div class="left-panel">
-        <div class="ai-feedback-section">
-          <div class="ai-header">
-            <van-icon name="comment-o" color="#1989fa" />
-            <span>AI老师的作文评语</span>
-          </div>
-          
-          <div class="ai-content-wrapper">
-            <div v-if="aiFeedback && aiFeedback.length > 0" class="ai-content">
-              <div class="ai-avatar">
-                <van-icon name="cluster-o" size="24" color="#fff" />
-              </div>
-              <div class="ai-text-container">
-                <h3 class="ai-title">AI老师的悄悄话：</h3>
-                <div class="ai-text">{{ aiFeedback }}</div>
-              </div>
-            </div>
-            
-            <div v-else class="ai-loading">
-              <van-loading size="24px" color="#1989fa" vertical>
-                正在加载AI评语...
-              </van-loading>
-            </div>
-            
-            <!-- 鼓励提示 -->
-            <div class="encouragement-tip">
-              <van-icon name="bulb-o" color="#f2bd27" />
-              <p>根据AI评语修改后，你的作文一定会更加精彩！</p>
-            </div>
-          </div>
+    <div v-if="!showCertificate" class="main-board">
+      <div class="vine-stage">
+        <div class="stars-summary">当前总计获得：<span>{{ totalStars }}</span> 颗星</div>
+        <svg class="vine-svg" viewBox="0 0 1200 680" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            d="M 90 590 C 250 520, 330 450, 430 360 C 520 280, 620 230, 740 190 C 860 150, 980 100, 1110 70"
+            class="vine-path"
+          />
+          <path
+            d="M 170 560 C 250 580, 300 620, 350 660"
+            class="vine-branch"
+          />
+          <path
+            d="M 520 300 C 600 320, 650 360, 700 410"
+            class="vine-branch"
+          />
+          <path
+            d="M 820 160 C 900 180, 960 230, 1020 290"
+            class="vine-branch"
+          />
+        </svg>
+
+        <div class="fruit fruit-a" aria-hidden="true">
+          <span class="leaf"></span>
+          <span class="body">🍎</span>
         </div>
+        <div class="fruit fruit-b" aria-hidden="true">
+          <span class="leaf"></span>
+          <span class="body">🍎</span>
+        </div>
+        <div class="fruit fruit-c current" aria-hidden="true">
+          <span class="leaf"></span>
+          <span class="body pulse">🍎</span>
+        </div>
+
+        <div class="node-label label-a">
+          <div class="title">观察</div>
+          <div class="sub">已获得 1 ⭐</div>
+        </div>
+
+        <div class="node-label label-b">
+          <div class="title">记录</div>
+          <div class="sub">已获得 {{ stage3Stars }} ⭐</div>
+        </div>
+
+        <div class="node-label label-c">
+          <div class="title">试写</div>
+        </div>
+
+        <section class="stage5-check-card">
+          <div class="card-title">请勾选你试写环节完成的表现</div>
+          <div class="check-group">
+            <button
+              v-for="item in stage5Options"
+              :key="item"
+              type="button"
+              class="check-option"
+              :class="{ checked: stage5Checks.includes(item) }"
+              @click="toggleStage5Check(item)"
+            >
+              <span class="check-label">{{ item }}</span>
+              <span class="check-box" :class="{ checked: stage5Checks.includes(item) }">
+                <span v-if="stage5Checks.includes(item)">✓</span>
+              </span>
+            </button>
+          </div>
+          <div class="stage5-star-tip">试写环节获得：{{ stage5Stars }} ⭐</div>
+        </section>
       </div>
 
-      <!-- ================= 右侧：课堂完成确认与荣誉领取 ================= -->
-      <div class="right-panel">
-        <div class="panel-header">🏆 课堂完成，领取荣誉奖状</div>
-        
-        <div class="scroll-content">
-          <!-- 课堂完成确认信息 -->
-          <div class="final-confirm-section">
-            <div class="final-summary">
-              <van-icon name="checked" size="60" color="#07c160" class="check-icon" />
-              <h2 class="final-title">你的课堂任务已完成！</h2>
-              <p class="final-desc">
-                你已经完成了《我的植物朋友》全部课堂环节：
-              </p>
-              <ul class="final-steps">
-                <li>✓ 课前观察植物照片</li>
-                <li>✓ 记录卡修改完善</li>
-                <li>✓ 课堂试稿写作</li>
-                <li>✓ 资源包学习提升</li>
-                <li>✓ AI评价指导</li>
-              </ul>
-              <div class="course-note">
-                <van-icon name="info-o" color="#1989fa" />
-                <span>注：作文的最终定稿将在课后完成，老师会指导你进一步完善</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 提交按钮 -->
-        <div class="action-footer">
-          <van-button 
-            type="warning" 
-            block 
-            round 
-            size="large" 
-            @click="onFinalSubmit"
-            :loading="isSubmitting"
-            loading-text="正在领取奖状..."
-          >
-            我已阅读评语，领取荣誉奖状
-          </van-button>
-        </div>
+      <div class="action-footer">
+        <van-button type="default" block round size="large" class="prev-btn" @click="goPrevStep">上一步</van-button>
+        <van-button
+          type="primary"
+          block
+          round
+          size="large"
+          :loading="isSubmitting"
+          loading-text="正在提交..."
+          @click="submitStage5"
+        >
+          完成全部挑战，领取荣誉证书
+        </van-button>
       </div>
     </div>
 
-    <!-- ================= 核心：电子奖状与撒花展示区 ================= -->
-    <div class="certificate-container" v-else>
-      <div class="certificate-card">
-        <div class="cert-border">
-          <div class="cert-content">
-            <div class="cert-header">荣 誉 奖 状</div>
-            <div class="cert-body">
-              <p class="cert-name"><span>{{ userStore.studentName }}</span> 同学：</p>
-              <p class="cert-text">
-                在《我的植物朋友》互动课堂中，你通过细致的观察和生动的描写，成功完成了一篇优秀的习作。表现出色，特发此证，以资鼓励！
-              </p>
-              <p class="cert-title">小小植物学家</p>
-            </div>
-            <div class="cert-footer">
-              <p>语文互动课堂项目组</p>
-              <p>{{ currentDate }}</p>
-            </div>
+    <div v-else class="certificate-wrap">
+      <div class="certificate">
+        <div class="cert-inner">
+          <div class="cert-title">荣 誉 奖 状</div>
+          <div class="cert-body">
+            <p>亲爱的 <span class="strong-name">{{ displayName }}</span> 同学：</p>
+            <p>在《我的植物朋友》探索中，你共获得了 <span class="strong-num">{{ totalStars }}</span> 颗星！</p>
+            <p>根据你的表现，特授予你以下称号：</p>
+            <p class="badge-title">{{ awardTitle }}</p>
+          </div>
+          <div class="cert-footer">
+            <span>语文互动课堂</span>
+            <span>{{ todayText }}</span>
           </div>
         </div>
       </div>
-      
-      <div class="final-actions">
-        <van-button icon="share-o" type="primary" round plain @click="shareCert">分享我的荣誉</van-button>
-        <van-button icon="arrow-left" type="default" round plain @click="goBackToAI">返回查看AI评语</van-button>
-        <p class="final-tip">老师在大屏上也能看到你的作品哦！</p>
+
+      <div class="cert-actions">
+        <van-button type="default" round size="large" @click="backToVinePage">上一步</van-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useUserStore } from '../store/user';
+import { computed, ref } from 'vue';
 import axios from 'axios';
 import { showToast } from 'vant';
-import confetti from 'canvas-confetti'; // 导入撒花插件
-import { submitFinalApi } from '../api/student';
+import confetti from 'canvas-confetti';
+import { useUserStore } from '../store/user';
 
 const userStore = useUserStore();
 
-// AI评语相关状态
-const aiFeedback = ref('');
-const isLoadingAI = ref(true);
 const isSubmitting = ref(false);
-const currentDate = new Date().toLocaleDateString();
-
-// 控制是否显示奖状（总是先显示AI评语页面）
 const showCertificate = ref(false);
+const stage5Checks = ref([]);
 
-// 页面加载时获取AI评语
-onMounted(async () => {
-  await fetchAIFeedback();
-});
+const stage5Options = [
+  '1. 我能写清楚',
+  '2. 我愿意分享我的习作',
+];
 
-// 获取AI评语 - 参考TeacherDash.vue的实现方式
-const fetchAIFeedback = async () => {
-  isLoadingAI.value = true;
-  try {
-    // 首选方案：通过教师端接口获取学生详情（与TeacherDash.vue一致）
-    const teacherResponse = await axios.get(`/api/teacher/dashboard/student-detail/${userStore.studentId}`);
-    if (teacherResponse.data && teacherResponse.data.ai_feedback_text) {
-      aiFeedback.value = teacherResponse.data.ai_feedback_text;
-      console.log('通过教师端接口成功获取AI评语');
-      return;
-    }
-    
-    // 备选方案：通过学生信息接口获取AI评语
-    try {
-      const studentResponse = await axios.get(`/api/student/student/info/${userStore.studentId}`);
-      if (studentResponse.data && studentResponse.data.ai_feedback) {
-        aiFeedback.value = studentResponse.data.ai_feedback;
-        console.log('通过学生信息接口成功获取AI评语');
-        return;
-      }
-    } catch (studentError) {
-      console.warn('通过学生信息接口获取AI评语失败:', studentError.message);
-    }
-    
-    // 如果所有API都失败，显示详细且有意义的默认评语
-    aiFeedback.value = `✨ 亲爱的${userStore.studentName || '同学'}，AI老师看到了你的努力！你的作文观察细致，描写生动。如果在描写植物叶子的时候，能加入"摸上去是什么感觉"的细节，文章会更精彩哦！继续加油！\n\n📝 写作小提示：\n1. 多使用比喻句（如：叶子像小手掌）\n2. 加入五感描写（看、闻、摸、听、尝）\n3. 写出自己的真实感受\n4. 保持工整的字迹`;
-  } catch (error) {
-    console.warn('获取AI评语失败:', error);
-    aiFeedback.value = `✨ ${userStore.studentName || '同学'}的作文很用心！观察到植物的细节，也写了自己的感受。继续努力，你会写得更好！\n\n💡 改进建议：\n• 可以多描述植物的颜色变化\n• 加入季节对植物的影响\n• 写出植物给你的启发`;
-  } finally {
-    isLoadingAI.value = false;
+const toggleStage5Check = (item) => {
+  if (stage5Checks.value.includes(item)) {
+    stage5Checks.value = stage5Checks.value.filter((v) => v !== item);
+  } else {
+    stage5Checks.value = [...stage5Checks.value, item];
   }
 };
 
-// --- 最终提交并触发撒花 ---
-const onFinalSubmit = async () => {
-  const randomDelay = Math.floor(Math.random() * 2000);
-  await new Promise(resolve => setTimeout(resolve, randomDelay));
+const stage1Stars = computed(() => Number(userStore.stage1Stars ?? 1));
+const stage3Stars = computed(() => Number(userStore.stage3Stars ?? 0));
+const stage5Stars = computed(() => stage5Checks.value.length);
+const totalStars = computed(() => stage1Stars.value + stage3Stars.value + stage5Stars.value);
+
+const displayName = computed(() => userStore.studentName || '小朋友');
+const todayText = new Date().toLocaleDateString();
+
+const awardTitle = computed(() => {
+  if (totalStars.value >= 5) return '🌟 小小植物学家 🌟';
+  if (totalStars.value >= 3) return '🌱 优秀观察员 🌱';
+  return '🍃 植物好朋友 🍃';
+});
+
+const launchConfetti = () => {
+  const end = Date.now() + 2200;
+  const defaults = { startVelocity: 35, spread: 100, ticks: 80, zIndex: 1000 };
+
+  const timer = setInterval(() => {
+    const left = end - Date.now();
+    if (left <= 0) {
+      clearInterval(timer);
+      return;
+    }
+
+    const ratio = left / 2200;
+    const count = Math.max(18, Math.floor(60 * ratio));
+
+    confetti({ ...defaults, particleCount: count, origin: { x: 0.15, y: 0.15 } });
+    confetti({ ...defaults, particleCount: count, origin: { x: 0.85, y: 0.2 } });
+  }, 220);
+};
+
+const submitStage5 = async () => {
+  if (isSubmitting.value) return;
 
   isSubmitting.value = true;
   try {
-    // 提交环节5完成状态 - 使用统一的API函数
-    await submitFinalApi(userStore.studentId);
-
-    // 更新用户状态为已完成
-    userStore.finishAll();
-
-    // 触发撒花特效
-    triggerConfetti();
-
-    // 显示奖状
-    showCertificate.value = true;
-    
-    showToast({ message: '太棒了！你真了不起！', type: 'success' });
-  } catch (err) {
-    console.warn('提交环节5失败:', err);
-    // 记录详细的错误信息
-    if (err.response) {
-      console.error('错误状态码:', err.response.status);
-      console.error('错误响应:', err.response.data);
-      console.error('请求数据:', { student_id: userStore.studentId });
+    await axios.post('/api/student/stage5/submit', {
+      student_id: String(userStore.studentId || ''),
+      stage5_checks: [...stage5Checks.value],
+      total_stars: totalStars.value,
+    });
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      await axios.post('/api/student/stage5/final', {
+        student_id: String(userStore.studentId || ''),
+      });
+    } else {
+      showToast('提交失败，请重试');
+      isSubmitting.value = false;
+      return;
     }
-    // 即使提交失败，也显示奖状（演示用）
+  }
+
+  if (typeof userStore.finishAll === 'function') {
     userStore.finishAll();
-    triggerConfetti();
-    showCertificate.value = true;
-    showToast({ message: '恭喜完成课程！', type: 'success' });
-  } finally {
-    isSubmitting.value = false;
   }
+
+  showCertificate.value = true;
+  launchConfetti();
+  showToast({ message: '恭喜你完成全部挑战！', type: 'success' });
+  isSubmitting.value = false;
 };
 
-// 页面加载时检查是否已提交，自动触发撒花
-onMounted(() => {
-  // 如果刷新后发现已经提交过了，可以自动再撒一小次花
-  if (userStore.hasFinalSubmitted) {
-    triggerConfetti(); 
-  }
-});
-
-// 撒花函数
-const triggerConfetti = () => {
-  const duration = 3 * 1000;
-  const animationEnd = Date.now() + duration;
-  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-  const interval = setInterval(function() {
-    const timeLeft = animationEnd - Date.now();
-    if (timeLeft <= 0) return clearInterval(interval);
-
-    const particleCount = 50 * (timeLeft / duration);
-    confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
-  }, 250);
+const goPrevStep = () => {
+  userStore.setStage('4');
 };
 
-const shareCert = () => showToast('老师已在主屏幕展示你的荣誉！');
-
-// 返回查看AI评语
-const goBackToAI = () => {
+const backToVinePage = () => {
   showCertificate.value = false;
 };
 </script>
 
 <style scoped>
-.stage-container { 
-  height: 100%; 
-  display: flex; 
-  flex-direction: column; 
-  background-color: #f7f8fa; 
-}
-
-.split-layout { 
-  flex: 1; 
-  display: flex; 
-  overflow: hidden; 
-}
-
-/* ================= 左侧：AI评语展示区 ================= */
-.left-panel { 
-  flex: 1; 
-  background-color: #f0f7ff; 
-  display: flex; 
-  flex-direction: column; 
-  padding: 20px; 
-  overflow: hidden;
-}
-
-.ai-feedback-section {
-  flex: 1;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+.stage-container {
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: radial-gradient(circle at 20% 10%, #f4fff1 0%, #eef8ef 45%, #e8f2e9 100%);
 }
 
-.ai-header {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  padding: 16px;
-  border-bottom: 1px solid #f2f3f5;
+.top-nav {
+  min-height: 56px;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.ai-content-wrapper {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.ai-content {
-  display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f3e7ff 0%, #e2e0ff 100%);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(114, 50, 221, 0.1);
-}
-
-.ai-avatar {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  background: linear-gradient(135deg, #7232dd, #1989fa);
-  border-radius: 50%;
-  display: flex;
   justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(114, 50, 221, 0.3);
-}
-
-.ai-text-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ai-title {
-  color: #531dab;
-  font-size: 16px;
-  margin: 0;
-  font-weight: bold;
-}
-
-.ai-text {
-  color: #391085;
-  font-size: 15px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  font-weight: 500;
-}
-
-.ai-loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
-}
-
-.encouragement-tip {
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e8 100%);
-  border-left: 4px solid #07c160;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.encouragement-tip p {
-  font-size: 14px;
-  color: #333;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ================= 右侧：定稿确认与提交区 ================= */
-.right-panel { 
-  flex: 1.2; 
-  background-color: #fff; 
-  display: flex; 
-  flex-direction: column; 
-  border-left: 1px solid #ebedf0; 
-}
-
-.panel-header { 
-  font-size: 20px; 
-  font-weight: bold; 
-  padding: 20px; 
-  color: #323233; 
-  border-bottom: 1px solid #f2f3f5; 
-  flex-shrink: 0; 
-}
-
-.scroll-content { 
-  flex: 1; 
-  padding: 20px; 
-  display: flex; 
-  flex-direction: column; 
-  overflow-y: auto; 
-}
-
-/* 定稿确认区域 */
-.final-confirm-section {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.final-summary {
-  text-align: center;
-  padding: 24px;
-  background: linear-gradient(135deg, #fff9e6 0%, #fff1c1 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(242, 189, 39, 0.1);
-}
-
-.check-icon {
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float { 
-  0%, 100% { transform: translateY(0); } 
-  50% { transform: translateY(-15px); } 
-}
-
-.final-title {
-  font-size: 22px;
-  color: #856404;
-  margin: 0 0 16px 0;
-}
-
-.final-desc {
-  font-size: 16px;
-  color: #856404;
-  margin: 0 0 16px 0;
-  font-weight: 500;
-}
-
-.final-steps {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-  display: inline-block;
-}
-
-.final-steps li {
-  font-size: 14px;
-  color: #856404;
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.course-note {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f0f7ff;
-  border-radius: 8px;
-  border-left: 4px solid #1989fa;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  color: #333;
-  line-height: 1.5;
-}
-
-.course-note span {
-  flex: 1;
-}
-
-
-.action-footer { 
-  padding: 25px; 
-  background-color: #fff; 
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.03); 
+  background: linear-gradient(180deg, #ffffff 0%, #f4fbf6 100%);
+  border-bottom: 1px solid #d9eede;
+  box-shadow: 0 3px 10px rgba(45, 138, 78, 0.08);
+  font-size: 20px;
+  font-weight: 800;
+  color: #1f5d35;
   flex-shrink: 0;
 }
 
-/* ================= 奖状样式 ================= */
-.certificate-container { 
-  flex: 1; 
-  background: #555; 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center; 
-  padding: 20px; 
+.main-board {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 10px;
+  padding: 12px 16px 16px;
+  box-sizing: border-box;
 }
 
-.certificate-card { 
-  width: 90%; 
-  max-width: 600px; 
-  background: #fff; 
-  padding: 15px; 
-  border-radius: 4px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-  transform: rotate(-1deg); 
+.stars-summary {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid #ccead5;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #1f5d35;
+  text-align: left;
 }
 
-.cert-border { 
-  border: 10px double #f2bd27; 
-  padding: 20px; 
-  height: 100%; 
+.stars-summary span {
+  color: #f49b00;
+  font-size: 24px;
 }
 
-.cert-content { 
-  border: 2px solid #f2bd27; 
-  padding: 30px; 
-  background: #fffcf5; 
-  text-align: center; 
-  position: relative; 
+.vine-stage {
+  position: relative;
+  min-height: 0;
+  border-radius: 26px;
+  background: linear-gradient(165deg, #ffffff 0%, #f7fdf8 100%);
+  border: 2px solid #ccead5;
+  overflow: hidden;
 }
 
-.cert-header { 
-  font-size: 40px; 
-  color: #d4237a; 
-  font-family: "SimSun", serif; 
-  font-weight: bold; 
-  margin-bottom: 30px; 
-  letter-spacing: 10px; 
+.vine-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.cert-body { 
-  text-align: left; 
-  line-height: 2; 
-  color: #333; 
+.vine-path {
+  fill: none;
+  stroke: #2d8a4e;
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 2;
+  opacity: 0.95;
 }
 
-.cert-name { 
-  font-size: 22px; 
-  margin-bottom: 15px; 
+.vine-branch {
+  fill: none;
+  stroke: #49a968;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 6 2;
+  opacity: 0.9;
 }
 
-.cert-name span { 
-  text-decoration: underline; 
-  font-weight: bold; 
-  padding: 0 10px; 
+.fruit {
+  position: absolute;
+  width: 56px;
+  height: 60px;
+  pointer-events: none;
 }
 
-.cert-text { 
-  text-indent: 2em; 
-  font-size: 18px; 
-  margin-bottom: 30px; 
+.fruit .leaf {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 16px;
+  height: 10px;
+  background: #5cc77a;
+  border-radius: 100% 0 100% 0;
+  transform: translateX(-10px) rotate(-28deg);
+  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.12);
 }
 
-.cert-title { 
-  text-align: center; 
-  font-size: 32px; 
-  color: #f2bd27; 
-  font-weight: bold; 
-  margin-top: 40px; 
-  font-family: "KaiTi"; 
+.fruit .body {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  font-size: 48px;
+  line-height: 1;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.18));
 }
 
-.cert-footer { 
-  text-align: right; 
-  margin-top: 40px; 
-  font-size: 16px; 
+.fruit-a { left: 12%; bottom: 12%; }
+.fruit-b { left: 48%; bottom: 42%; }
+.fruit-c { right: 13%; top: 8%; }
+
+.node-label {
+  position: absolute;
+  color: #1f5d35;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+  text-align: center;
 }
 
-.final-actions { 
-  margin-top: 30px; 
-  text-align: center; 
-  color: #fff; 
+.node-label .title {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
-.final-tip { 
-  margin-top: 15px; 
-  opacity: 0.7; 
-  font-size: 14px; 
+.node-label .sub {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #f49b00;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .split-layout {
-    flex-direction: column;
+.label-a { left: calc(12% - 67px); bottom: calc(12% - 62px); width: 190px; text-align: center; }
+.label-b { left: calc(48% - 58px); bottom: calc(42% - 66px); width: 172px; }
+.label-c { right: calc(13% - 24px); top: calc(8% + 58px); width: 110px; }
+
+.pulse {
+  animation: pulseGlow 1.5s infinite;
+}
+
+@keyframes pulseGlow {
+  0% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.08); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+.stage5-check-card {
+  position: absolute;
+  right: 3.5%;
+  top: calc(8% + 110px);
+  width: min(34vw, 420px);
+  background: #fffdf7;
+  border: 2px solid #f3dfb5;
+  border-radius: 20px;
+  padding: 12px;
+  box-shadow: 0 8px 18px rgba(188, 140, 50, 0.12);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #6f5518;
+  margin-bottom: 8px;
+}
+
+.check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.check-option {
+  border: 2px solid #eadfca;
+  border-radius: 16px;
+  background: #fff;
+  padding: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.check-option.checked {
+  border-color: #71be87;
+  background: #f3fff6;
+}
+
+.check-box {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #c2cede;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #377dff;
+  font-size: 18px;
+  font-weight: 700;
+  background: #f8fbff;
+  flex-shrink: 0;
+}
+
+.check-box.checked {
+  border-color: #377dff;
+  background: #eaf1ff;
+}
+
+.check-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2f3b30;
+  line-height: 1.35;
+}
+
+.stage5-star-tip {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 16px;
+  font-weight: 800;
+  color: #f49b00;
+}
+
+.action-footer {
+  padding: 6px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.prev-btn {
+  min-width: 130px;
+}
+
+:deep(.van-button--large) {
+  height: 54px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+:deep(.van-button--primary) {
+  background: linear-gradient(90deg, #2d8a4e, #4aae67);
+  border: 0;
+}
+
+.certificate-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 20%, #fff6d8 0%, #f8eecb 45%, #f2e2b4 100%);
+}
+
+.certificate {
+  width: min(92vw, 860px);
+  background: #fff6de;
+  border-radius: 20px;
+  padding: 14px;
+  border: 5px solid #d4a93b;
+  box-shadow: 0 14px 30px rgba(127, 88, 15, 0.2);
+}
+
+.cert-inner {
+  border: 3px solid #e0bf69;
+  border-radius: 14px;
+  background: #fff9eb;
+  padding: 24px;
+}
+
+.cert-title {
+  text-align: center;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: #c4472f;
+  margin-bottom: 18px;
+}
+
+.cert-body {
+  font-size: 26px;
+  color: #5a4317;
+  line-height: 1.8;
+}
+
+.strong-name,
+.strong-num {
+  font-weight: 900;
+  color: #1f5d35;
+}
+
+.badge-title {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 900;
+  color: #1f5d35;
+}
+
+.cert-footer {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  color: #8a6a2b;
+}
+
+.cert-actions {
+  width: min(92vw, 860px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1200px) {
+  .node-label .title { font-size: 20px; }
+  .node-label .sub { font-size: 16px; }
+  .check-label { font-size: 15px; }
+  .stage5-check-card { width: min(39vw, 380px); }
+  .fruit .body { font-size: 40px; }
+  .cert-title { font-size: 44px; }
+  .cert-body { font-size: 22px; }
+  .badge-title { font-size: 32px; }
+}
+
+@media (max-width: 900px) {
+  .main-board { padding: 10px; }
+  .stars-summary { font-size: 16px; left: 10px; top: 10px; padding: 6px 10px; }
+  .stars-summary span { font-size: 19px; }
+  .stage5-check-card {
+    right: 4%;
+    width: 92%;
+    top: auto;
+    bottom: 5%;
   }
-  
-  .left-panel, .right-panel {
-    flex: 1;
+  .node-label .title { font-size: 17px; }
+  .node-label .sub { font-size: 14px; }
+  .fruit .body { font-size: 34px; }
+  .label-a { left: calc(12% - 47px); bottom: calc(12% - 52px); width: 150px; text-align: center; }
+  .fruit-b { left: 49%; bottom: 43%; }
+  .label-b { left: calc(49% - 46px); bottom: calc(43% - 56px); width: 148px; }
+  .label-c { right: calc(13% - 18px); top: calc(8% + 52px); width: 90px; }
+  .action-footer {
+    grid-template-columns: 1fr;
   }
-  
-  .right-panel {
-    border-left: none;
-    border-top: 1px solid #ebedf0;
-  }
-  
-  .ai-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  .prev-btn {
+    width: 100%;
   }
 }
 </style>
