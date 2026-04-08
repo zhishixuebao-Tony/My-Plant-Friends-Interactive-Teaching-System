@@ -1,9 +1,9 @@
 ﻿<template>
-  <!-- eslint-disable vue/no-v-model-argument -->
   <div class="teacher-container">
-    <van-nav-bar title="教师指挥中心" />
+    <van-nav-bar title="教师指挥中心" fixed placeholder />
 
     <div class="main-content">
+      <!-- ================= 学生在线状态 ================= -->
       <div class="section-title">全班学生在线状态 (<span class="highlight">{{ stats.online }}</span>/{{ stats.total }})</div>
 
       <div class="matrix-grid">
@@ -23,88 +23,85 @@
         </div>
       </div>
 
+      <!-- ================= 恢复：带进度条的现代数据表格区 ================= -->
       <div class="section-title tables-title">各环节数据实时统计</div>
       <div class="tables-container">
+        
+        <!-- 表1：观察方法 -->
         <div class="data-table-box">
           <div class="table-head">观察方法统计</div>
-          <table class="custom-table">
-            <thead>
-              <tr><th>观察项</th><th>勾选数</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in sensoryRows" :key="row.key">
-                <td>
-                  <button class="link-cell" @click="openSelectionPopup('sensory', row)">{{ row.label }}</button>
-                </td>
-                <td>{{ getSensoryCount(row.key) }} 人</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="stat-list">
+            <div class="stat-row" v-for="row in sensoryRows" :key="row.key" @click="openSelectionPopup('sensory', row)">
+              <div class="stat-bg" :style="{ width: getPercentage(getSensoryCount(row.key)) + '%' }"></div>
+              <div class="stat-content">
+                <span class="stat-label">{{ row.label }}</span>
+                <span class="stat-value">{{ getSensoryCount(row.key) }} 人</span>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- 表2：新发现 -->
         <div class="data-table-box">
           <div class="table-head">新发现统计</div>
-          <table class="custom-table">
-            <thead>
-              <tr><th>评价项</th><th>勾选数</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in dimensionRows" :key="row.key">
-                <template v-if="row.type === 'group'">
-                  <td colspan="2" class="dimension-group-row">{{ row.label }}</td>
-                </template>
-                <template v-else>
-                  <td>
-                    <button class="link-cell" @click="openSelectionPopup('dimension', row)">{{ row.label }}</button>
-                  </td>
-                  <td>{{ getDimensionCount(row.key) }} 人</td>
-                </template>
-              </tr>
-            </tbody>
-          </table>
+          <div class="stat-list">
+            <template v-for="row in dimensionRows" :key="row.key">
+              <div v-if="row.type === 'group'" class="dimension-group-row">{{ row.label }}</div>
+              <div v-else class="stat-row" @click="openSelectionPopup('dimension', row)">
+                <div class="stat-bg" :style="{ width: getPercentage(getDimensionCount(row.key)) + '%' }"></div>
+                <div class="stat-content">
+                  <span class="stat-label">{{ row.label }}</span>
+                  <span class="stat-value">{{ getDimensionCount(row.key) }} 人</span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
 
+        <!-- 表3：资源点击 -->
         <div class="data-table-box">
           <div class="table-head">资源点击统计</div>
-          <table class="custom-table">
-            <thead>
-              <tr><th>资源名称</th><th>点击数</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in resourceRows" :key="row.key">
-                <td>
-                  <button class="link-cell" @click="openSelectionPopup('resource', row)">{{ row.label }}</button>
-                </td>
-                <td>{{ getResourceCount(row.key) }} 次</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="stat-list">
+            <div class="stat-row" v-for="row in resourceRows" :key="row.key" @click="openSelectionPopup('resource', row)">
+              <!-- 资源点击可能超过总人数，这里基数设为估算的最大值比如100 -->
+              <div class="stat-bg resource-bg" :style="{ width: Math.min((getResourceCount(row.key) / 100) * 100, 100) + '%' }"></div>
+              <div class="stat-content">
+                <span class="stat-label">{{ row.label }}</span>
+                <span class="stat-value">{{ getResourceCount(row.key) }} 次</span>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- 表4：写作目标 -->
         <div class="data-table-box">
           <div class="table-head">写作目标达成统计</div>
-          <table class="custom-table">
-            <thead>
-              <tr><th>评价项</th><th>勾选数</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in writingRows" :key="row.key">
-                <template v-if="row.type === 'group'">
-                  <td colspan="2" class="dimension-group-row">{{ row.label }}</td>
-                </template>
-                <template v-else>
-                  <td>
-                    <button class="link-cell" @click="openSelectionPopup('writing', row)">{{ row.label }}</button>
-                  </td>
-                  <td>{{ getWritingCount(row.key) }} 人</td>
-                </template>
-              </tr>
-            </tbody>
-          </table>
+          <div class="stat-list">
+            <template v-for="row in writingRows" :key="row.key">
+              <div v-if="row.type === 'group'" class="dimension-group-row">{{ row.label }}</div>
+              <div v-else class="stat-row" @click="openSelectionPopup('writing', row)">
+                <div class="stat-bg" :style="{ width: getPercentage(getWritingCount(row.key)) + '%' }"></div>
+                <div class="stat-content">
+                  <span class="stat-label">{{ row.label }}</span>
+                  <span class="stat-value">{{ getWritingCount(row.key) }} 人</span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
+      </div>
+
+      <!-- ================= 深度学情可视化分析 ================= -->
+      <div class="section-title tables-title" style="margin-top: 40px;">深度学情可视化分析</div>
+      <div class="charts-container">
+        <div class="chart-box"><div ref="chart1Ref" class="echart-instance"></div></div>
+        <div class="chart-box"><div ref="chart2Ref" class="echart-instance"></div></div>
+        <div class="chart-box"><div ref="chart3Ref" class="echart-instance"></div></div>
+        <div class="chart-box"><div ref="chart4Ref" class="echart-instance"></div></div>
       </div>
     </div>
 
+    <!-- 学生档案抽屉 -->
     <van-popup v-model:show="showDrawer" position="right" :style="{ width: '550px', height: '100%' }">
       <div v-if="detailLoading" class="loading-box">
         <van-loading size="24px" vertical>正在读取该生详细档案...</van-loading>
@@ -148,6 +145,7 @@
       </div>
     </van-popup>
 
+    <!-- 选择弹窗 -->
     <van-popup v-model:show="showSelectionPopup" position="center" round :style="{ width: '480px', maxWidth: '92vw' }">
       <div class="selection-popup">
         <div class="selection-title">{{ selectionTitle }}</div>
@@ -170,10 +168,12 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { showImagePreview, showToast } from 'vant';
+import * as echarts from 'echarts';
 
+// --- 数据状态 ---
 const studentList = ref([]);
 const stats = ref({ online: 0, total: 50, table1: {}, table2: {}, table3: {}, table4: {}, table5: 0, resource_completed: 0 });
 
@@ -184,6 +184,7 @@ const showSelectionPopup = ref(false);
 const selectionTitle = ref('');
 const selectedStudents = ref([]);
 
+// --- 表格定义 ---
 const sensoryRows = [
   { key: '看一看', label: '👀 看一看' },
   { key: '闻一闻', label: '👃 闻一闻' },
@@ -201,9 +202,9 @@ const dimensionRows = [
 ];
 
 const resourceRows = [
-  { key: '融入感受', label: '感受小锦囊' },
-  { key: '有序介绍', label: '顺序百宝箱' },
-  { key: '优美词句', label: '词语百花园' },
+  { key: '感受小锦囊', label: '感受小锦囊' },
+  { key: '顺序百宝箱', label: '顺序百宝箱' },
+  { key: '词语百花园', label: '词语百花园' },
 ];
 
 const writingRows = [
@@ -213,29 +214,19 @@ const writingRows = [
   { key: '2.我分享了我的习作', label: '2.我分享了我的习作' },
 ];
 
+// --- 辅助统计函数 ---
 const getSensoryCount = (name) => {
-  const aliasMap = {
-    '看一看': ['看一看'],
-    '闻一闻': ['闻一闻'],
-    '摸一摸': ['摸一摸'],
-    '听一听': ['听一听'],
-    '尝一尝': ['尝一尝'],
-    '其他': ['其他'],
-  };
-  const keys = aliasMap[name] || [name];
-  return keys.reduce((sum, key) => sum + (stats.value.table1?.[key] || 0), 0);
+  const aliasMap = { '看一看': ['看一看'], '闻一闻': ['闻一闻'], '摸一摸': ['摸一摸'], '听一听': ['听一听'], '尝一尝': ['尝一尝'], '其他': ['其他'] };
+  return (aliasMap[name] || [name]).reduce((sum, key) => sum + (stats.value.table1?.[key] || 0), 0);
 };
 
 const getDimensionCount = (name) => {
   const aliasMap = {
     '我暂时没有新的发现': ['我暂时没有新的发现', '我暂时没有新的发现。'],
     '我已经有了新的发现：（1）有以前没观察到的': ['我已经有了新的发现：（1）有以前没观察到的', '评价一：能真实记录植物特点', '评价一'],
-    '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': [
-      '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-    ],
+    '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': ['我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）'],
   };
-  const keys = aliasMap[name] || [name];
-  return keys.reduce((sum, key) => sum + (stats.value.table2?.[key] || 0), 0);
+  return (aliasMap[name] || [name]).reduce((sum, key) => sum + (stats.value.table2?.[key] || 0), 0);
 };
 
 const getResourceCount = (resourceName) => {
@@ -252,19 +243,17 @@ const getWritingCount = (name) => {
     '（2）我能有顺序介绍': ['（2）我能有顺序介绍', '（2）我能有顺序介绍。（√）'],
     '2.我分享了我的习作': ['2.我分享了我的习作', '我分享了我的习作'],
   };
-  const keys = aliasMap[name] || [name];
-  return keys.reduce((sum, key) => sum + (stats.value.table4?.[key] || 0), 0);
+  return (aliasMap[name] || [name]).reduce((sum, key) => sum + (stats.value.table4?.[key] || 0), 0);
+};
+
+const getPercentage = (count) => {
+  const total = stats.value.total || 50;
+  return total === 0 ? 0 : Math.min((count / total) * 100, 100);
 };
 
 const getFinalStars = (student) => {
   if (!student) return 0;
-  const candidates = [
-    student.total_stars,
-    student.totalStars,
-    student.final_stars,
-    student.finalStars,
-    student.stage_total_stars,
-  ];
+  const candidates = [student.total_stars, student.totalStars, student.final_stars, student.finalStars, student.stage_total_stars];
   for (const value of candidates) {
     const n = Number(value);
     if (Number.isFinite(n) && n >= 0) return Math.max(0, Math.floor(n));
@@ -283,35 +272,17 @@ const formatStars = (count) => {
   return n > 0 ? `⭐`.repeat(n) : '';
 };
 
+// --- 名单弹窗映射 ---
 const getSensoryAliases = (name) => {
-  const aliasMap = {
-    '看一看': ['看一看', '看了看'],
-    '闻一闻': ['闻一闻', '闻了闻'],
-    '摸一摸': ['摸一摸', '摸了摸'],
-    '听一听': ['听一听'],
-    '尝一尝': ['尝一尝', '尝了尝'],
-    '其他': ['其他'],
-  };
+  const aliasMap = { '看一看': ['看一看', '看了看'], '闻一闻': ['闻一闻', '闻了闻'], '摸一摸': ['摸一摸', '摸了摸'], '听一听': ['听一听'], '尝一尝': ['尝一尝', '尝了尝'], '其他': ['其他'] };
   return aliasMap[name] || [name];
 };
-
 const getDimensionAliases = (name) => {
-  const aliasMap = {
-    '我暂时没有新的发现': ['我暂时没有新的发现', '我暂时没有新的发现。'],
-    '我已经有了新的发现：（1）有以前没观察到的': ['我已经有了新的发现：（1）有以前没观察到的', '评价一：能真实记录植物特点', '评价一'],
-    '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': [
-      '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-    ],
-  };
+  const aliasMap = { '我暂时没有新的发现': ['我暂时没有新的发现', '我暂时没有新的发现。'], '我已经有了新的发现：（1）有以前没观察到的': ['我已经有了新的发现：（1）有以前没观察到的', '评价一：能真实记录植物特点', '评价一'], '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': ['我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）'] };
   return aliasMap[name] || [name];
 };
-
 const getWritingAliases = (name) => {
-  const aliasMap = {
-    '（1）我能从多方面介绍': ['（1）我能从多方面介绍', '（1）我能从多方面介绍。（√）'],
-    '（2）我能有顺序介绍': ['（2）我能有顺序介绍', '（2）我能有顺序介绍。（√）'],
-    '2.我分享了我的习作': ['2.我分享了我的习作', '我分享了我的习作'],
-  };
+  const aliasMap = { '（1）我能从多方面介绍': ['（1）我能从多方面介绍', '（1）我能从多方面介绍。（√）'], '（2）我能有顺序介绍': ['（2）我能有顺序介绍', '（2）我能有顺序介绍。（√）'], '2.我分享了我的习作': ['2.我分享了我的习作', '我分享了我的习作'] };
   return aliasMap[name] || [name];
 };
 
@@ -348,6 +319,7 @@ const openSelectionPopup = (type, row) => {
   showSelectionPopup.value = true;
 };
 
+// --- WebSocket 与数据请求 ---
 const fetchDashboardData = async () => {
   try {
     const res = await axios.get('/api/teacher/dashboard/statistics');
@@ -358,8 +330,8 @@ const fetchDashboardData = async () => {
       table1: res.data.table1_sensory || {},
       table2: res.data.table2_dimension || {},
       table3: res.data.table3_resource || {},
-      table4: res.data.table4_writing || {},  // 改为写作统计对象
-      table5: res.data.table5_ai_count || 0,  // AI计数移到table5
+      table4: res.data.table4_writing || {},  
+      table5: res.data.table5_ai_count || 0,  
       resource_completed: res.data.resource_completed_count || 0,
     };
   } catch (err) {
@@ -381,23 +353,9 @@ let pollTimer = null;
 
 const initWebSocket = () => {
   socket = new WebSocket(wsURL);
-
-  socket.onopen = () => {
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
-  };
-
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.action === 'REFRESH_DASHBOARD') fetchDashboardData();
-  };
-
-  socket.onclose = () => {
-    reconnectTimer = setTimeout(initWebSocket, 3000);
-  };
-
+  socket.onopen = () => { if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; } };
+  socket.onmessage = (event) => { const data = JSON.parse(event.data); if (data.action === 'REFRESH_DASHBOARD') fetchDashboardData(); };
+  socket.onclose = () => { reconnectTimer = setTimeout(initWebSocket, 3000); };
   socket.onerror = () => socket.close();
 };
 
@@ -426,11 +384,106 @@ const preview = (url) => {
   showImagePreview({ images: [url], closeable: true, closeOnClickOverlay: true, teleport: 'body' });
 };
 
+// ================= ECharts 可视化图表逻辑 =================
+const chart1Ref = ref(null);
+const chart2Ref = ref(null);
+const chart3Ref = ref(null);
+const chart4Ref = ref(null);
+let charts = [];
+
+const initCharts = () => {
+  if (!chart1Ref.value) return;
+  const c1 = echarts.init(chart1Ref.value);
+  const c2 = echarts.init(chart2Ref.value);
+  const c3 = echarts.init(chart3Ref.value);
+  const c4 = echarts.init(chart4Ref.value);
+  charts = [c1, c2, c3, c4];
+  updateCharts();
+};
+
+const updateCharts = () => {
+  if (charts.length === 0) return;
+
+  // 1. 观察方法 (柱状图)
+  charts[0].setOption({
+    title: { text: '观察方法使用倾向', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
+    tooltip: { trigger: 'axis' },
+    color: ['#07c160'],
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: sensoryRows.map(r => r.key), axisLabel: { interval: 0, rotate: 30 } },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [{ type: 'bar', barWidth: '40%', data: sensoryRows.map(r => getSensoryCount(r.key)), itemStyle: { borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', formatter: '{c}人' } }]
+  });
+
+  // 2. 新发现 (玫瑰图) - 智能短化标签
+  const dData = dimensionRows.filter(r => r.type !== 'group').map(r => {
+    const shortNames = {
+      '我暂时没有新的发现': '无新发现',
+      '我已经有了新的发现：（1）有以前没观察到的': '新观察',
+      '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': '新感受'
+    };
+    return { name: shortNames[r.key] || r.key, value: getDimensionCount(r.key) };
+  }).filter(d => d.value > 0);
+
+  charts[1].setOption({
+    title: { text: '新发现维度占比', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
+    tooltip: { trigger: 'item', formatter: '{b}<br/>{c}人 ({d}%)' },
+    legend: { top: 'bottom', textStyle: { fontSize: 12 }, itemWidth: 10, itemHeight: 10 },
+    color: ['#1989fa', '#ff976a', '#ee0a24'],
+    series: [{
+      type: 'pie', radius: ['20%', '50%'], center: ['50%', '45%'], roseType: 'area',
+      itemStyle: { borderRadius: 4 },
+      label: { show: dData.length > 0, formatter: '{b}\n{c}人' },
+      data: dData.length > 0 ? dData : [{ name: '暂无数据', value: 0 }]
+    }]
+  });
+
+  // 3. 资源点击 (横向条形图) - 使用完整的 r.label
+  charts[2].setOption({
+    title: { text: '资源包热度排行', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    color: ['#f2bd27'],
+    grid: { left: '3%', right: '12%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'value', minInterval: 1 },
+    yAxis: { type: 'category', data: resourceRows.map(r => r.label).reverse(), axisLabel: { width: 80, overflow: 'truncate' } },
+    series: [{ type: 'bar', data: resourceRows.map(r => getResourceCount(r.key)).reverse(), label: { show: true, position: 'right', formatter: '{c}次' }, itemStyle: { borderRadius: [0, 4, 4, 0] } }]
+  });
+
+  // 4. 写作目标 (环形图) - 智能短化标签
+  const wData = writingRows.filter(r => r.type !== 'group').map(r => {
+    const shortNames = {
+      '（1）我能从多方面介绍': '多方介绍',
+      '（2）我能有顺序介绍': '有序介绍',
+      '2.我分享了我的习作': '分享习作'
+    };
+    return { name: shortNames[r.key] || r.key, value: getWritingCount(r.key) };
+  }).filter(d => d.value > 0);
+
+  charts[3].setOption({
+    title: { text: '写作目标达成度', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
+    tooltip: { trigger: 'item', formatter: '{b}<br/>{c}人 ({d}%)' },
+    legend: { top: 'bottom', textStyle: { fontSize: 12 }, itemWidth: 10, itemHeight: 10 },
+    color: ['#7232dd', '#07c160', '#ff976a'],
+    series: [{
+      type: 'pie', radius: ['35%', '50%'], center: ['50%', '45%'], avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      label: { show: wData.length > 0, formatter: '{b}\n{c}人' },
+      data: wData.length > 0 ? wData : [{ name: '暂无数据', value: 0 }]
+    }]
+  });
+};
+
+watch(() => stats.value, () => { nextTick(updateCharts); }, { deep: true });
 
 onMounted(() => {
   fetchDashboardData();
   initWebSocket();
   pollTimer = setInterval(fetchDashboardData, 60000);
+
+  nextTick(() => {
+    initCharts();
+    window.addEventListener('resize', () => charts.forEach(c => c.resize()));
+  });
 });
 
 onUnmounted(() => {
@@ -440,10 +493,12 @@ onUnmounted(() => {
     socket.onclose = null;
     socket.close();
   }
+  window.removeEventListener('resize', () => charts.forEach(c => c.resize()));
 });
 </script>
 
 <style scoped>
+/* ================= 核心修复：防止导航栏遮挡 ================= */
 .teacher-container { 
   height: 100%; 
   background-color: #f2f3f5; 
@@ -451,87 +506,37 @@ onUnmounted(() => {
   flex-direction: column; 
   overflow-y: auto; 
   overflow-x: hidden; 
-  /* 默认底部安全区域 */
   padding-bottom: 100px;
 }
 
-/* 平板横屏优化布局 */
-@media (min-width: 768px) and (max-width: 1199px) {
-  .teacher-container {
-    /* 底部安全区域增加到150px，确保不被系统导航栏遮挡 */
-    padding-bottom: env(safe-area-inset-bottom, 150px);
-  }
-  
-  /* 针对横屏优化：增加整体内边距，提升视觉舒适度 */
-  .main-content {
-    padding: 36px; /* 保持整体内边距 */
-  }
-  
-  /* 横屏下表格区域增加更多上边距 */
-  .tables-title {
-    margin-top: 48px;
-  }
-  
-  /* 横屏下优化学生矩阵网格：10列可能太密，调整为7列，提高可读性 */
-  .matrix-grid {
-    grid-template-columns: repeat(7, 1fr);
-    gap: 16px;
-  }
-  
-  /* 横屏下学生卡片增大，提高可读性 */
-  .student-card {
-    height: 92px;
-  }
-  
-  /* 横屏下学生卡片内文字优化 */
-  .name-text {
-    font-size: 16px;
-  }
-  
-  /* 表格压缩：与默认样式保持一致 */
-  .data-table-box {
-    padding: 16px 12px; /* 与默认保持一致 */
-  }
-  
-  .table-head {
-    font-size: 16px; /* 与默认保持一致 */
-    margin-bottom: 14px; /* 与默认保持一致 */
-  }
-  
-  /* 横屏下表格内容与默认保持一致 */
-  .custom-table th,
-  .custom-table td {
-    padding: 10px 8px; /* 与默认保持一致 */
-    font-size: 14px; /* 与默认保持一致 */
-  }
-  
-  .custom-table th:nth-child(1),
-  .custom-table td:nth-child(1) {
-    padding-right: 16px; /* 与默认保持一致 */
-    width: 70%; /* 与默认保持一致 */
-  }
-  
-  .custom-table th:nth-child(2),
-  .custom-table td:nth-child(2) {
-    padding-left: 16px; /* 与默认保持一致 */
-    font-size: 14px; /* 与默认保持一致 */
-    width: 30%; /* 与默认保持一致 */
-  }
-  
-  /* 横屏下整体字体适当调整 */
-  .section-title {
-    font-size: 22px;
-  }
-  
-  .highlight {
-    font-size: 28px;
-  }
+.main-content { 
+  padding: 60px 24px 24px 24px; /* 顶部留出 60px 安全距离，避免被 fixed 的 nav-bar 遮挡 */
+  max-width: 1400px; 
+  margin: 0 auto; 
+  width: 100%; 
+  box-sizing: border-box; 
 }
 
-.main-content { padding: 24px; }
+@media (min-width: 768px) and (max-width: 1199px) {
+  .teacher-container {
+    padding-bottom: env(safe-area-inset-bottom, 150px);
+  }
+  .main-content {
+    padding: 60px 36px 36px 36px;
+  }
+  .tables-title { margin-top: 48px; }
+  .matrix-grid { grid-template-columns: repeat(7, 1fr); gap: 16px; }
+  .student-card { height: 92px; }
+  .name-text { font-size: 16px; }
+  .section-title { font-size: 22px; }
+  .highlight { font-size: 28px; }
+}
+
 .section-title { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 20px; border-left: 5px solid #07c160; padding-left: 12px; }
-.tables-title { margin-top: 36px; }
+.tables-title { margin-top: 36px; border-left-color: #1989fa; }
 .highlight { color: #07c160; font-size: 26px; }
+
+/* 学生卡片 */
 .matrix-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 12px; }
 .student-card { height: 82px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); transition: transform 0.15s; }
 .student-card:active { transform: scale(0.98); }
@@ -541,95 +546,78 @@ onUnmounted(() => {
 .name-text { font-size: 15px; font-weight: 700; margin-top: 6px; }
 .star-row { margin-top: 4px; font-size: 14px; line-height: 1; letter-spacing: 1px; color: #f59e0b; font-weight: 700; }
 .medal-icon { position: absolute; top: -8px; right: -6px; font-size: 18px; }
-.tables-container { 
+
+/* 表格与图表布局 */
+.tables-container, .charts-container { 
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 横屏2x2田字排列 */
+  grid-template-columns: repeat(2, 1fr); 
   gap: 24px;
 }
 
-.data-table-box { 
+.data-table-box, .chart-box { 
   background: #fff; 
   border-radius: 12px; 
-  padding: 16px 12px; /* 压缩左右内边距 */
+  padding: 16px 12px; 
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); 
   border-top: 4px solid #07c160; 
-  transition: transform 0.2s ease;
   min-width: 0; 
   overflow: hidden; 
 }
-
-.data-table-box:hover {
-  transform: translateY(-2px); 
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); 
-}
-
-
-
-
-
-.custom-table {
-  width: 100%;
-  table-layout: fixed; 
-}
-
-.custom-table th:nth-child(1),
-.custom-table td:nth-child(1) {
-  width: 70%;
-}
-
-.custom-table th:nth-child(2),
-.custom-table td:nth-child(2) {
-  width: 30%;
-}
-
-.custom-table th,
-.custom-table td {
-  word-break: break-word; 
-  overflow-wrap: break-word;
-}
-
+.chart-box { border-top-color: #1989fa; }
 
 .table-head { font-weight: 700; font-size: 16px; margin-bottom: 14px; color: #333; text-align: center; }
-.custom-table { width: 100%; border-collapse: collapse; text-align: left; }
-.custom-table th, .custom-table td { padding: 10px 8px; border-bottom: 1px dashed #ebedf0; }
-.custom-table th { color: #969799; font-weight: 400; font-size: 14px; }
-.custom-table td { color: #323233; font-weight: 500; }
 
-.custom-table th:nth-child(1),
-.custom-table td:nth-child(1) {
-  text-align: left;
-  padding-right: 16px; /* 从24px压缩到16px */
-  padding-left: 6px; /* 从8px压缩到6px */
-}
-
-.custom-table th:nth-child(2),
-.custom-table td:nth-child(2) {
-  text-align: right;
-  padding-left: 16px; /* 从24px压缩到16px */
-  padding-right: 8px; /* 从12px压缩到8px */
-  font-weight: 600; 
-  color: #07c160; 
-}
+/* ================= 进度条表格样式 ================= */
+.stat-list { display: flex; flex-direction: column; gap: 8px; }
 
 .dimension-group-row {
-  color: #6b7280 !important;
-  font-weight: 700 !important;
-  background: #fafafa;
-  text-align: left !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  font-size: 13px;
+  font-weight: 700;
+  color: #969799;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #ebedf0;
 }
-.link-cell {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-decoration: none;
+
+.stat-row {
+  position: relative;
+  border-radius: 6px;
+  background: #f7f8fa;
+  overflow: hidden;
   cursor: pointer;
-  padding: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  text-align: left;
+  transition: transform 0.1s;
 }
+.stat-row:active { transform: scale(0.98); }
+.stat-row:hover { background: #f0f3f6; }
+
+/* 进度条背景 */
+.stat-bg {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: rgba(7, 193, 96, 0.12);
+  transition: width 0.5s ease-out;
+  z-index: 1;
+}
+.resource-bg { background: rgba(242, 189, 39, 0.15); border-left: 2px solid #f2bd27; }
+
+.stat-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+}
+
+.stat-label { font-size: 14px; color: #323233; font-weight: 500; }
+.stat-value { font-size: 14px; color: #07c160; font-weight: bold; }
+
+/* 图表区 */
+.echart-instance { width: 100%; height: 280px; }
+
+@media (max-width: 900px) { .tables-container, .charts-container { grid-template-columns: 1fr; } }
+
+/* 详情抽屉 */
 .loading-box { height: 100%; display: flex; justify-content: center; align-items: center; }
 .scroll-body { padding: 20px; overflow-y: auto; height: calc(100% - 46px); background: #f7f8fa; }
 .module-title { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 15px; padding-left: 5px; border-left: 4px solid #1989fa; }
@@ -642,35 +630,14 @@ onUnmounted(() => {
 .img-item { background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
 .item-tag { font-size: 13px; font-weight: 700; color: #666; margin-bottom: 10px; text-align: center; }
 .img-item .van-image { width: 100%; height: 160px; border-radius: 8px; overflow: hidden; background: #f2f3f5; cursor: pointer; border: 1px solid #f0f0f0; }
+
+/* 弹窗 */
 .selection-popup { padding: 16px; }
 .selection-title { font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
 .selection-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 10px; }
-.selection-grid {
-  max-height: 50vh;
-  overflow: auto;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 4px;
-}
-
-.selection-grid .student-card {
-  height: 58px;
-}
-
-.selection-grid .id-tag {
-  top: 3px;
-  left: 5px;
-  font-size: 11px;
-}
-
-.selection-grid .name-text {
-  font-size: 14px;
-}
-
-@media (max-width: 768px) {
-  .selection-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
+.selection-grid { max-height: 50vh; overflow: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 4px; }
+.selection-grid .student-card { height: 58px; }
+.selection-grid .id-tag { top: 3px; left: 5px; font-size: 11px; }
+.selection-grid .name-text { font-size: 14px; }
+@media (max-width: 768px) { .selection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
