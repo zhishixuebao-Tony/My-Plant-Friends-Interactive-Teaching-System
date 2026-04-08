@@ -95,7 +95,6 @@ const onPreLogin = async () => {
 const onFinalConfirm = () => {
   if (!studentFullData.value) return;
 
-  // Request fullscreen inside the click-confirm gesture context.
   if (document.fullscreenElement !== document.documentElement) {
     document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch((error) => {
       console.warn('Fullscreen request failed on login confirm:', error);

@@ -187,25 +187,6 @@ const onFinalSubmit = async () => {
   }
 
   const stage3Stars = Number(hasUnseen.value) + Number(hasFeeling.value);
-  let dialogTitle = '记录卡完成';
-  let dialogMessage = '';
-
-  if (noNewFinding.value) {
-    dialogTitle = '认真记录，继续加油';
-    dialogMessage = '你认真地完成了记录卡，并且诚实表达了“暂时没有新的发现”。这份认真很棒，我们到下一个环节继续探索吧。';
-  } else {
-    const selectedNewFindings = [];
-    if (hasUnseen.value) selectedNewFindings.push('有以前没观察到的');
-    if (hasFeeling.value) selectedNewFindings.push('观察后，有了点儿感受');
-    dialogTitle = '发现小能手';
-    dialogMessage = `太棒啦！你勾选了：${selectedNewFindings.join('、')}，本环节奖励你 ${stage3Stars} 颗星⭐，继续保持！`;
-  }
-
-  await showDialog({
-    title: dialogTitle,
-    message: dialogMessage,
-    confirmButtonText: '继续',
-  });
 
   isSubmitting.value = true;
   try {
@@ -216,7 +197,8 @@ const onFinalSubmit = async () => {
     if (typeof userStore.setStage3Stars === 'function') {
       userStore.setStage3Stars(stage3Stars);
     }
-    userStore.setStage('4');
+    userStore.setDimensionSelections(selectedChecks.value);
+    userStore.setStage('record-card-transition');
     showToast({ message: '提交成功', type: 'success' });
   } catch (error) {
     console.error(error);

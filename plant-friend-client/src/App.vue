@@ -20,7 +20,9 @@
         <Login v-if="userStore.currentStage === '0'" />
         <Welcome v-else-if="userStore.currentStage === 'welcome'" />
         <Sensory v-else-if="userStore.currentStage === '1'" />
+        <SensoryTransition v-else-if="userStore.currentStage === 'sensory-transition'" />
         <RecordCard v-else-if="userStore.currentStage === '2'" />
+        <RecordCardTransition v-else-if="userStore.currentStage === 'record-card-transition'" />
         <ViewRecordCards v-else-if="userStore.currentStage === '3'" />
         <ResourcePack v-else-if="userStore.currentStage === '4'" />
         <FinalDraft v-else-if="userStore.currentStage === '5'" />
@@ -40,8 +42,10 @@ import { useUserStore } from './store/user';
 import FinalDraft from './views/FinalDraft.vue';
 import Login from './views/Login.vue';
 import RecordCard from './views/RecordCard.vue';
+import RecordCardTransition from './views/RecordCardTransition.vue';
 import ResourcePack from './views/ResourcePack.vue';
 import Sensory from './views/Sensory.vue';
+import SensoryTransition from './views/SensoryTransition.vue';
 import TeacherDash from './views/TeacherDash.vue';
 import ViewRecordCards from './views/ViewRecordCards.vue';
 import Welcome from './views/Welcome.vue';

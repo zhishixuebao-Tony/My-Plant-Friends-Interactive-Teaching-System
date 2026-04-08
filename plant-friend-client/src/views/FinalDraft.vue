@@ -53,18 +53,42 @@
 
         <section class="stage5-check-card">
           <div class="card-title">请勾选你试写环节完成的表现</div>
-          <div class="check-group">
+          <div class="eval-box">
+            <div class="group-title">1. 我试着写清楚了：</div>
+            
             <button
-              v-for="item in stage5Options"
-              :key="item"
               type="button"
-              class="check-option"
-              :class="{ checked: stage5Checks.includes(item) }"
-              @click="toggleStage5Check(item)"
+              class="check-row sub"
+              :class="{ active: hasMultiaspect, disabled: false }"
+              @click="toggleMultiaspect"
             >
-              <span class="check-label">{{ item }}</span>
-              <span class="check-box" :class="{ checked: stage5Checks.includes(item) }">
-                <span v-if="stage5Checks.includes(item)">✓</span>
+              <span>（1）我能从多方面介绍</span>
+              <span class="square" :class="{ checked: hasMultiaspect }">
+                {{ hasMultiaspect ? '✓' : '' }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="check-row sub"
+              :class="{ active: hasOrderly, disabled: false }"
+              @click="toggleOrderly"
+            >
+              <span>（2）我能有顺序介绍</span>
+              <span class="square" :class="{ checked: hasOrderly }">
+                {{ hasOrderly ? '✓' : '' }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="check-row"
+              :class="{ active: hasShared }"
+              @click="toggleShared"
+            >
+              <span>2.我分享了我的习作</span>
+              <span class="square" :class="{ checked: hasShared }">
+                {{ hasShared ? '✓' : '' }}
               </span>
             </button>
           </div>
@@ -123,24 +147,52 @@ const userStore = useUserStore();
 
 const isSubmitting = ref(false);
 const showCertificate = ref(false);
-const stage5Checks = ref([]);
 
-const stage5Options = [
-  '1. 我能写清楚',
-  '2. 我愿意分享我的习作',
-];
+const hasMultiaspect = ref(false);  
+const hasOrderly = ref(false);      
+const hasShared = ref(false);      
 
-const toggleStage5Check = (item) => {
-  if (stage5Checks.value.includes(item)) {
-    stage5Checks.value = stage5Checks.value.filter((v) => v !== item);
-  } else {
-    stage5Checks.value = [...stage5Checks.value, item];
-  }
+
+const toggleMultiaspect = () => {
+  hasMultiaspect.value = !hasMultiaspect.value;
 };
+
+const toggleOrderly = () => {
+  hasOrderly.value = !hasOrderly.value;
+};
+
+const toggleShared = () => {
+  hasShared.value = !hasShared.value;
+};
+
+const selectedStage5Checks = computed(() => {
+  const checks = [];
+  if (hasMultiaspect.value || hasOrderly.value) {
+    checks.push('1. 我试着写清楚了');
+  }
+  if (hasShared.value) {
+    checks.push('2. 我分享了我的习作');
+  }
+  return checks;
+});
 
 const stage1Stars = computed(() => Number(userStore.stage1Stars ?? 1));
 const stage3Stars = computed(() => Number(userStore.stage3Stars ?? 0));
-const stage5Stars = computed(() => stage5Checks.value.length);
+
+const stage5Stars = computed(() => {
+  let stars = 0;
+  
+  if (hasMultiaspect.value || hasOrderly.value) {
+    stars += 1;
+  }
+  
+  if (hasShared.value) {
+    stars += 1;
+  }
+  
+  return stars;
+});
+
 const totalStars = computed(() => stage1Stars.value + stage3Stars.value + stage5Stars.value);
 
 const displayName = computed(() => userStore.studentName || '小朋友');
@@ -176,9 +228,20 @@ const submitStage5 = async () => {
 
   isSubmitting.value = true;
   try {
+    const checks = [];
+    if (hasMultiaspect.value) {
+      checks.push('（1）我能从多方面介绍。（√）');
+    }
+    if (hasOrderly.value) {
+      checks.push('（2）我能有顺序介绍。（√）');
+    }
+    if (hasShared.value) {
+      checks.push('我分享了我的习作');
+    }
+    
     await axios.post('/api/student/stage5/submit', {
       student_id: String(userStore.studentId || ''),
-      stage5_checks: [...stage5Checks.value],
+      stage5_checks: checks,
       total_stars: totalStars.value,
     });
   } catch (error) {
@@ -446,6 +509,77 @@ const backToVinePage = () => {
   font-size: 16px;
   font-weight: 800;
   color: #f49b00;
+}
+
+.eval-box {
+  border: 1px solid #e1e8f5;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.group-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2e4058;
+  margin-top: 6px;
+}
+
+.check-row {
+  width: 100%;
+  border: 1px solid #d7e0ef;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  min-height: 72px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #223247;
+}
+
+.check-row.sub {
+  margin-left: 8px;
+  width: calc(100% - 8px);
+}
+
+.check-row.active {
+  border-color: #3a7bff;
+  background: #f2f7ff;
+}
+
+.check-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.square {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #c2cede;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #377dff;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #f8fbff;
+}
+
+.square.checked {
+  border-color: #377dff;
+  background: #eaf1ff;
 }
 
 .action-footer {

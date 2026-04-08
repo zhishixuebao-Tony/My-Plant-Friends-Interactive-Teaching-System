@@ -127,9 +127,15 @@ def _calc_stage3_stars(checks: List[str]) -> int:
 
 def _calc_stage5_stars(checks: List[str]) -> int:
     values = _normalize_text_items(checks)
-    has_clear = any(('我能写清楚' in v) for v in values)
-    has_share = any(('我愿意分享我的习作' in v) for v in values)
-    return int(has_clear) + int(has_share)
+    # 检测选项1的两个子项：任意勾选至少一个算1星
+    has_option1_sub1 = any(('（1）我能从多方面介绍' in v) for v in values)
+    has_option1_sub2 = any(('（2）我能有顺序介绍' in v) for v in values)
+    has_option1 = has_option1_sub1 or has_option1_sub2
+    
+    # 检测选项2：勾选算1星
+    has_option2 = any(('我分享了我的习作' in v) for v in values)
+    
+    return int(has_option1) + int(has_option2)
 
 
 @router.post('/stage0/login')

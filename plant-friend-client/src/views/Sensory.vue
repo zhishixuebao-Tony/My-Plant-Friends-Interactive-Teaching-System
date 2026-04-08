@@ -137,19 +137,11 @@ const toggleItem = (name) => {
 const onNextStep = async () => {
   if (checkedItems.value.length === 0) return;
 
-  const methods = checkedItems.value.join('、');
-  const methodCount = checkedItems.value.length;
-  const methodText = methodCount > 1 ? `你用了${methods}这${methodCount}种方法` : `你用了${methods}这种方法`;
-  await showDialog({
-    title: '观察小达人',
-    message: `太棒啦！${methodText}来观察植物，真像一位小小观察家！本环节奖励你 1 颗星⭐，继续加油！`,
-    confirmButtonText: '继续',
-  });
-
   loading.value = true;
   try {
     await submitSensoryApi(userStore.studentId, checkedItems.value);
-    userStore.setStage('3');
+    userStore.setSensorySelections(checkedItems.value);
+    userStore.setStage('sensory-transition');
     showToast({ message: '观察记录成功', type: 'success' });
   } catch (error) {
     console.error(error);

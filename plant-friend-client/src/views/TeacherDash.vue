@@ -1,4 +1,5 @@
 ﻿<template>
+  <!-- eslint-disable vue/no-v-model-argument -->
   <div class="teacher-container">
     <van-nav-bar title="教师指挥中心" />
 
@@ -25,10 +26,10 @@
       <div class="section-title tables-title">各环节数据实时统计</div>
       <div class="tables-container">
         <div class="data-table-box">
-          <div class="table-head">感官观察统计</div>
+          <div class="table-head">观察方法统计</div>
           <table class="custom-table">
             <thead>
-              <tr><th>观察项</th><th>勾选人数</th></tr>
+              <tr><th>观察项</th><th>勾选数</th></tr>
             </thead>
             <tbody>
               <tr v-for="row in sensoryRows" :key="row.key">
@@ -42,10 +43,10 @@
         </div>
 
         <div class="data-table-box">
-          <div class="table-head">记录卡自评统计</div>
+          <div class="table-head">新发现统计</div>
           <table class="custom-table">
             <thead>
-              <tr><th>评价维度</th><th>勾选人数</th></tr>
+              <tr><th>评价项</th><th>勾选数</th></tr>
             </thead>
             <tbody>
               <tr v-for="row in dimensionRows" :key="row.key">
@@ -64,10 +65,10 @@
         </div>
 
         <div class="data-table-box">
-          <div class="table-head">资源包学习热度</div>
+          <div class="table-head">资源点击统计</div>
           <table class="custom-table">
             <thead>
-              <tr><th>资源名称</th><th>点击次数</th></tr>
+              <tr><th>资源名称</th><th>点击数</th></tr>
             </thead>
             <tbody>
               <tr v-for="row in resourceRows" :key="row.key">
@@ -75,6 +76,28 @@
                   <button class="link-cell" @click="openSelectionPopup('resource', row)">{{ row.label }}</button>
                 </td>
                 <td>{{ getResourceCount(row.key) }} 次</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="data-table-box">
+          <div class="table-head">写作目标达成统计</div>
+          <table class="custom-table">
+            <thead>
+              <tr><th>评价项</th><th>勾选数</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in writingRows" :key="row.key">
+                <template v-if="row.type === 'group'">
+                  <td colspan="2" class="dimension-group-row">{{ row.label }}</td>
+                </template>
+                <template v-else>
+                  <td>
+                    <button class="link-cell" @click="openSelectionPopup('writing', row)">{{ row.label }}</button>
+                  </td>
+                  <td>{{ getWritingCount(row.key) }} 人</td>
+                </template>
               </tr>
             </tbody>
           </table>
@@ -152,7 +175,7 @@ import axios from 'axios';
 import { showImagePreview, showToast } from 'vant';
 
 const studentList = ref([]);
-const stats = ref({ online: 0, total: 50, table1: {}, table2: {}, table3: {}, table4: 0, resource_completed: 0 });
+const stats = ref({ online: 0, total: 50, table1: {}, table2: {}, table3: {}, table4: {}, table5: 0, resource_completed: 0 });
 
 const showDrawer = ref(false);
 const activeData = ref(null);
@@ -171,26 +194,32 @@ const sensoryRows = [
 ];
 
 const dimensionRows = [
-  { key: '我暂时没有新的发现', label: '我暂时没有新的发现' },
-  { key: 'dimension-group-found', label: '我已经有了新的发现：', type: 'group' },
+  { key: '我暂时没有新的发现', label: '1.我暂时没有新的发现' },
+  { key: 'dimension-group-found', label: '2.我已经有了新的发现：', type: 'group' },
   { key: '我已经有了新的发现：（1）有以前没观察到的', label: '（1）有以前没观察到的' },
   { key: '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）', label: '（2）观察后，有了点儿感受（身体感觉 心里想法）' },
 ];
 
 const resourceRows = [
-  { key: '多方面介绍', label: '多方面介绍' },
-  { key: '融入感受', label: '融入感受' },
-  { key: '有序介绍', label: '有序介绍' },
-  { key: '优美词句', label: '优美词句' },
+  { key: '融入感受', label: '感受小锦囊' },
+  { key: '有序介绍', label: '顺序百宝箱' },
+  { key: '优美词句', label: '词语百花园' },
+];
+
+const writingRows = [
+  { key: 'writing-group-clarity', label: '1. 我试着写清楚了：', type: 'group' },
+  { key: '（1）我能从多方面介绍', label: '（1）我能从多方面介绍' },
+  { key: '（2）我能有顺序介绍', label: '（2）我能有顺序介绍' },
+  { key: '2.我分享了我的习作', label: '2.我分享了我的习作' },
 ];
 
 const getSensoryCount = (name) => {
   const aliasMap = {
-    '看一看': ['看一看', '看了看'],
-    '闻一闻': ['闻一闻', '闻了闻'],
-    '摸一摸': ['摸一摸', '摸了摸'],
+    '看一看': ['看一看'],
+    '闻一闻': ['闻一闻'],
+    '摸一摸': ['摸一摸'],
     '听一听': ['听一听'],
-    '尝一尝': ['尝一尝', '尝了尝'],
+    '尝一尝': ['尝一尝'],
     '其他': ['其他'],
   };
   const keys = aliasMap[name] || [name];
@@ -203,11 +232,6 @@ const getDimensionCount = (name) => {
     '我已经有了新的发现：（1）有以前没观察到的': ['我已经有了新的发现：（1）有以前没观察到的', '评价一：能真实记录植物特点', '评价一'],
     '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': [
       '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-      '评价二：能描写自己的感受',
-      '评价二：能描写出自己的感受',
-      '评价二',
-      '评价三：书写认真、字迹工整',
-      '评价三',
     ],
   };
   const keys = aliasMap[name] || [name];
@@ -220,6 +244,16 @@ const getResourceCount = (resourceName) => {
     if (String(key).startsWith(resourceName)) return sum + Number(count || 0);
     return sum;
   }, 0);
+};
+
+const getWritingCount = (name) => {
+  const aliasMap = {
+    '（1）我能从多方面介绍': ['（1）我能从多方面介绍', '（1）我能从多方面介绍。（√）'],
+    '（2）我能有顺序介绍': ['（2）我能有顺序介绍', '（2）我能有顺序介绍。（√）'],
+    '2.我分享了我的习作': ['2.我分享了我的习作', '我分享了我的习作'],
+  };
+  const keys = aliasMap[name] || [name];
+  return keys.reduce((sum, key) => sum + (stats.value.table4?.[key] || 0), 0);
 };
 
 const getFinalStars = (student) => {
@@ -267,12 +301,16 @@ const getDimensionAliases = (name) => {
     '我已经有了新的发现：（1）有以前没观察到的': ['我已经有了新的发现：（1）有以前没观察到的', '评价一：能真实记录植物特点', '评价一'],
     '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': [
       '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-      '评价二：能描写自己的感受',
-      '评价二：能描写出自己的感受',
-      '评价二',
-      '评价三：书写认真、字迹工整',
-      '评价三',
     ],
+  };
+  return aliasMap[name] || [name];
+};
+
+const getWritingAliases = (name) => {
+  const aliasMap = {
+    '（1）我能从多方面介绍': ['（1）我能从多方面介绍', '（1）我能从多方面介绍。（√）'],
+    '（2）我能有顺序介绍': ['（2）我能有顺序介绍', '（2）我能有顺序介绍。（√）'],
+    '2.我分享了我的习作': ['2.我分享了我的习作', '我分享了我的习作'],
   };
   return aliasMap[name] || [name];
 };
@@ -292,6 +330,11 @@ const openSelectionPopup = (type, row) => {
     if (type === 'resource') {
       const statsMap = student.resource_click_stats || {};
       return Object.entries(statsMap).some(([k, v]) => String(k).startsWith(row.key) && Number(v || 0) > 0);
+    }
+    if (type === 'writing') {
+      const values = student.stage5_checks || [];
+      const aliases = getWritingAliases(row.key);
+      return values.some((item) => aliases.includes(String(item).trim()));
     }
     return false;
   });
@@ -315,7 +358,8 @@ const fetchDashboardData = async () => {
       table1: res.data.table1_sensory || {},
       table2: res.data.table2_dimension || {},
       table3: res.data.table3_resource || {},
-      table4: res.data.table4_ai_count || 0,
+      table4: res.data.table4_writing || {},  // 改为写作统计对象
+      table5: res.data.table5_ai_count || 0,  // AI计数移到table5
       resource_completed: res.data.resource_completed_count || 0,
     };
   } catch (err) {
@@ -400,7 +444,90 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.teacher-container { height: 100%; background-color: #f2f3f5; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+.teacher-container { 
+  height: 100%; 
+  background-color: #f2f3f5; 
+  display: flex; 
+  flex-direction: column; 
+  overflow-y: auto; 
+  overflow-x: hidden; 
+  /* 默认底部安全区域 */
+  padding-bottom: 100px;
+}
+
+/* 平板横屏优化布局 */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .teacher-container {
+    /* 底部安全区域增加到150px，确保不被系统导航栏遮挡 */
+    padding-bottom: env(safe-area-inset-bottom, 150px);
+  }
+  
+  /* 针对横屏优化：增加整体内边距，提升视觉舒适度 */
+  .main-content {
+    padding: 36px; /* 保持整体内边距 */
+  }
+  
+  /* 横屏下表格区域增加更多上边距 */
+  .tables-title {
+    margin-top: 48px;
+  }
+  
+  /* 横屏下优化学生矩阵网格：10列可能太密，调整为7列，提高可读性 */
+  .matrix-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 16px;
+  }
+  
+  /* 横屏下学生卡片增大，提高可读性 */
+  .student-card {
+    height: 92px;
+  }
+  
+  /* 横屏下学生卡片内文字优化 */
+  .name-text {
+    font-size: 16px;
+  }
+  
+  /* 表格压缩：与默认样式保持一致 */
+  .data-table-box {
+    padding: 16px 12px; /* 与默认保持一致 */
+  }
+  
+  .table-head {
+    font-size: 16px; /* 与默认保持一致 */
+    margin-bottom: 14px; /* 与默认保持一致 */
+  }
+  
+  /* 横屏下表格内容与默认保持一致 */
+  .custom-table th,
+  .custom-table td {
+    padding: 10px 8px; /* 与默认保持一致 */
+    font-size: 14px; /* 与默认保持一致 */
+  }
+  
+  .custom-table th:nth-child(1),
+  .custom-table td:nth-child(1) {
+    padding-right: 16px; /* 与默认保持一致 */
+    width: 70%; /* 与默认保持一致 */
+  }
+  
+  .custom-table th:nth-child(2),
+  .custom-table td:nth-child(2) {
+    padding-left: 16px; /* 与默认保持一致 */
+    font-size: 14px; /* 与默认保持一致 */
+    width: 30%; /* 与默认保持一致 */
+  }
+  
+  /* 横屏下整体字体适当调整 */
+  .section-title {
+    font-size: 22px;
+  }
+  
+  .highlight {
+    font-size: 28px;
+  }
+}
+
 .main-content { padding: 24px; }
 .section-title { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 20px; border-left: 5px solid #07c160; padding-left: 12px; }
 .tables-title { margin-top: 36px; }
@@ -414,17 +541,83 @@ onUnmounted(() => {
 .name-text { font-size: 15px; font-weight: 700; margin-top: 6px; }
 .star-row { margin-top: 4px; font-size: 14px; line-height: 1; letter-spacing: 1px; color: #f59e0b; font-weight: 700; }
 .medal-icon { position: absolute; top: -8px; right: -6px; font-size: 18px; }
-.tables-container { display: flex; gap: 18px; flex-wrap: wrap; }
-.data-table-box { flex: 1; min-width: 260px; background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); border-top: 4px solid #07c160; }
+.tables-container { 
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 横屏2x2田字排列 */
+  gap: 24px;
+}
+
+.data-table-box { 
+  background: #fff; 
+  border-radius: 12px; 
+  padding: 16px 12px; /* 压缩左右内边距 */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04); 
+  border-top: 4px solid #07c160; 
+  transition: transform 0.2s ease;
+  min-width: 0; 
+  overflow: hidden; 
+}
+
+.data-table-box:hover {
+  transform: translateY(-2px); 
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); 
+}
+
+
+
+
+
+.custom-table {
+  width: 100%;
+  table-layout: fixed; 
+}
+
+.custom-table th:nth-child(1),
+.custom-table td:nth-child(1) {
+  width: 70%;
+}
+
+.custom-table th:nth-child(2),
+.custom-table td:nth-child(2) {
+  width: 30%;
+}
+
+.custom-table th,
+.custom-table td {
+  word-break: break-word; 
+  overflow-wrap: break-word;
+}
+
+
 .table-head { font-weight: 700; font-size: 16px; margin-bottom: 14px; color: #333; text-align: center; }
 .custom-table { width: 100%; border-collapse: collapse; text-align: left; }
 .custom-table th, .custom-table td { padding: 10px 8px; border-bottom: 1px dashed #ebedf0; }
 .custom-table th { color: #969799; font-weight: 400; font-size: 14px; }
 .custom-table td { color: #323233; font-weight: 500; }
+
+.custom-table th:nth-child(1),
+.custom-table td:nth-child(1) {
+  text-align: left;
+  padding-right: 16px; /* 从24px压缩到16px */
+  padding-left: 6px; /* 从8px压缩到6px */
+}
+
+.custom-table th:nth-child(2),
+.custom-table td:nth-child(2) {
+  text-align: right;
+  padding-left: 16px; /* 从24px压缩到16px */
+  padding-right: 8px; /* 从12px压缩到8px */
+  font-weight: 600; 
+  color: #07c160; 
+}
+
 .dimension-group-row {
   color: #6b7280 !important;
   font-weight: 700 !important;
   background: #fafafa;
+  text-align: left !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
 .link-cell {
   border: 0;

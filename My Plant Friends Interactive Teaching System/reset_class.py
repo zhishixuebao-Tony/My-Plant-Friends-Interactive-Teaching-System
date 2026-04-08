@@ -17,8 +17,11 @@ async def reset_class_data():
 
     会重置（保留字段不动）：
     - 登录状态与进度
-    - 环节 1/3/5 的勾选与星数
-    - 资源点击统计与完成状态
+    - 环节 1（感官观察）的勾选与星数
+    - 环节 3（记录卡）的勾选与星数
+    - 环节 5（试写环节）的勾选与星数
+    - 资源包点击统计与完成状态
+    - 证书领取状态与总星数
     - 课堂过程状态与统计字段（AI 兼容字段）
     - 旧的拍照上传产物字段会直接删除
     """
@@ -42,19 +45,19 @@ async def reset_class_data():
         "is_logged_in": False,
         "current_stage": "0",
 
-        # 1. 环节 1：感官观察
+        # 1. 环节 1：感官观察（观察方法统计）
         "sensory_evaluations": [],
         "stage1_stars": 0,
 
-        # 2. 环节 3：记录卡（命名互换后，数据库仍按既有字段）
+        # 2. 环节 3：记录卡（新发现统计）
         "dimension_evaluations": [],
         "stage3_stars": 0,
 
-        # 3. 资源包与相关统计
+        # 3. 资源包与相关统计（资源点击统计）
         "has_viewed_resources": False,
         "resource_click_stats": {},
 
-        # 4. 环节 5：试写与证书
+        # 4. 环节 5：试写与证书（写作目标达成统计）
         "stage5_checks": [],
         "stage5_stars": 0,
         "total_stars": 0,

@@ -24,6 +24,9 @@ export const useUserStore = defineStore('user', {
       stage3Stars: initialState?.stage3Stars ?? 0,
       currentStage: initialState?.currentStage || '0',
       finalSubmitted: initialState?.finalSubmitted || false,
+      // 存储用户选择的信息
+      sensorySelections: initialState?.sensorySelections || [],
+      dimensionSelections: initialState?.dimensionSelections || [],
     };
   },
 
@@ -113,9 +116,21 @@ export const useUserStore = defineStore('user', {
         stage3Stars: this.stage3Stars,
         currentStage: this.currentStage,
         finalSubmitted: this.finalSubmitted,
+        sensorySelections: this.sensorySelections,
+        dimensionSelections: this.dimensionSelections,
       };
 
       localStorage.setItem('plant-friend-user-state', JSON.stringify(stateToSave));
+    },
+
+    setSensorySelections(selections) {
+      this.sensorySelections = selections;
+      this.saveToStorage();
+    },
+
+    setDimensionSelections(selections) {
+      this.dimensionSelections = selections;
+      this.saveToStorage();
     },
 
     finishAll() {
