@@ -17,7 +17,7 @@
 
       <button type="button" class="grass-btn" @click="goNext">
         <span class="grass-icon"></span>
-        <span>进入本课程</span>
+        <span>开始成长</span>
       </button>
     </div>
   </div>

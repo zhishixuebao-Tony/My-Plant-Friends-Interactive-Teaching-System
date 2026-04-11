@@ -4,6 +4,7 @@
       <TeacherDash v-if="isTeacherMode" />
 
       <template v-else>
+  
         <div v-if="showStudentStageNav" class="student-stage-nav">
           <button
             v-for="item in stageNavItems"
@@ -16,6 +17,7 @@
             {{ item.label }}
           </button>
         </div>
+
 
         <Login v-if="userStore.currentStage === '0'" />
         <Welcome v-else-if="userStore.currentStage === 'welcome'" />
@@ -58,12 +60,12 @@ const showStudentStageNav = computed(() => !isTeacherMode.value);
 
 const stageNavItems = [
   { stage: '0', label: '登录页' },
-  { stage: 'welcome', label: '欢迎页' },
+  { stage: 'welcome', label: '欢迎' },
   { stage: '1', label: '环节1 观察' },
   { stage: '3', label: '环节2 查看记录卡' },
   { stage: '2', label: '环节3 记录卡' },
   { stage: '4', label: '环节4 资源包' },
-  { stage: '5', label: '环节5 荣誉时刻' },
+  { stage: '5', label: '环节5 总结' },
 ];
 
 const goToStage = (stage) => {
