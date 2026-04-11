@@ -1,6 +1,20 @@
 ﻿<template>
   <div class="stage-container">
-    <div class="top-nav">了解我的植物朋友</div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">了解我的植物朋友</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        :disabled="checkedItems.length === 0 || !canGoNext"
+        :loading="loading"
+        @click="onNextStep"
+        class="top-nav-action"
+      >
+        提交并下一步
+      </van-button>
+    </div>
 
     <div class="stage-body">
       <section class="observe-panel">
@@ -59,18 +73,6 @@
           </button>
         </div>
 
-        <van-button
-          type="primary"
-          block
-          round
-          size="large"
-          :disabled="checkedItems.length === 0"
-          :loading="loading"
-          @click="onNextStep"
-          class="submit-btn"
-        >
-          提交我使用的观察方法
-        </van-button>
       </section>
     </div>
   </div>
@@ -80,12 +82,14 @@
 import { computed, ref, watch } from 'vue';
 import { useUserStore } from '../store/user';
 import { submitSensoryApi } from '../api/student';
-import { showDialog, showImagePreview, showToast } from 'vant';
+import { showImagePreview, showToast } from 'vant';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 const loading = ref(false);
 const checkedItems = ref([]);
 const selectedPhotoIndex = ref(0);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.sensory));
 
 const options = [
   { name: '看一看', icon: '👀' },
@@ -135,6 +139,7 @@ const toggleItem = (name) => {
 };
 
 const onNextStep = async () => {
+  if (!canGoNext.value) return;
   if (checkedItems.value.length === 0) return;
 
   loading.value = true;
@@ -162,18 +167,35 @@ const onNextStep = async () => {
 }
 
 .top-nav {
-  min-height: 48px;
+  min-height: 56px;
   padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
   border-bottom: 1px solid #dfe6f3;
   box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+  flex-shrink: 0;
+}
+
+.top-nav-title {
   font-size: 17px;
   font-weight: 700;
   color: #1f2d3d;
-  flex-shrink: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
 }
 
 .stage-body {
@@ -267,10 +289,6 @@ const onNextStep = async () => {
   display: block;
 }
 
-.submit-btn {
-  margin-top: auto;
-}
-
 .option-list {
   flex: 1;
   min-height: 0;
@@ -328,6 +346,13 @@ const onNextStep = async () => {
   height: 44px;
 }
 
+:deep(.top-nav-action.van-button) {
+  height: 34px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .empty-tip {
   color: #8a97ab;
   font-size: 14px;
@@ -338,6 +363,16 @@ const onNextStep = async () => {
 }
 
 @media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+
   .stage-body {
     grid-template-columns: 1fr;
     gap: 10px;

@@ -23,11 +23,8 @@
         </div>
       </div>
 
-      <!-- ================= 恢复：带进度条的现代数据表格区 ================= -->
-      <div class="section-title tables-title">各环节数据实时统计</div>
-      <div class="tables-container">
-        
-        <!-- 表1：观察方法 -->
+      <div class="section-title tables-title">实时统计与可视化</div>
+      <div class="analysis-grid">
         <div class="data-table-box">
           <div class="table-head">观察方法统计</div>
           <div class="stat-list">
@@ -40,8 +37,8 @@
             </div>
           </div>
         </div>
+        <div class="chart-box"><div ref="chart1Ref" class="echart-instance"></div></div>
 
-        <!-- 表2：新发现 -->
         <div class="data-table-box">
           <div class="table-head">新发现统计</div>
           <div class="stat-list">
@@ -57,23 +54,22 @@
             </template>
           </div>
         </div>
+        <div class="chart-box"><div ref="chart2Ref" class="echart-instance"></div></div>
 
-        <!-- 表3：资源点击 -->
         <div class="data-table-box">
           <div class="table-head">资源点击统计</div>
           <div class="stat-list">
             <div class="stat-row" v-for="row in resourceRows" :key="row.key" @click="openSelectionPopup('resource', row)">
-              <!-- 资源点击可能超过总人数，这里基数设为估算的最大值比如100 -->
               <div class="stat-bg resource-bg" :style="{ width: Math.min((getResourceCount(row.key) / 100) * 100, 100) + '%' }"></div>
               <div class="stat-content">
                 <span class="stat-label">{{ row.label }}</span>
-                <span class="stat-value">{{ getResourceCount(row.key) }} 次</span>
+                <span class="stat-value">{{ getResourceUserCount(row.key) }} 人 {{ getResourceCount(row.key) }} 次</span>
               </div>
             </div>
           </div>
         </div>
+        <div class="chart-box"><div ref="chart3Ref" class="echart-instance"></div></div>
 
-        <!-- 表4：写作目标 -->
         <div class="data-table-box">
           <div class="table-head">写作目标达成统计</div>
           <div class="stat-list">
@@ -89,14 +85,6 @@
             </template>
           </div>
         </div>
-      </div>
-
-      <!-- ================= 深度学情可视化分析 ================= -->
-      <div class="section-title tables-title" style="margin-top: 40px;">深度学情可视化分析</div>
-      <div class="charts-container">
-        <div class="chart-box"><div ref="chart1Ref" class="echart-instance"></div></div>
-        <div class="chart-box"><div ref="chart2Ref" class="echart-instance"></div></div>
-        <div class="chart-box"><div ref="chart3Ref" class="echart-instance"></div></div>
         <div class="chart-box"><div ref="chart4Ref" class="echart-instance"></div></div>
       </div>
     </div>
@@ -149,13 +137,12 @@
     <van-popup v-model:show="showSelectionPopup" position="center" round :style="{ width: '480px', maxWidth: '92vw' }">
       <div class="selection-popup">
         <div class="selection-title">{{ selectionTitle }}</div>
-        <div class="selection-subtitle">选择该词条的学生（{{ selectedStudents.length }} 人）</div>
+        <div class="selection-subtitle">选择该词条的学生（已选择 {{ selectedCount }} 人）</div>
         <div v-if="selectedStudents.length" class="selection-grid">
           <div
             v-for="item in selectedStudents"
             :key="item.id"
-            class="student-card"
-            :class="item.isLoggedIn ? 's-online' : 's-offline'"
+            class="student-card s-online"
           >
             <div class="id-tag">{{ item.id }}</div>
             <div class="name-text">{{ item.name }}</div>
@@ -172,6 +159,7 @@ import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { showImagePreview, showToast } from 'vant';
 import * as echarts from 'echarts';
+import { preloadTeacherAllImages } from '../utils/imagePreloader';
 
 // --- 数据状态 ---
 const studentList = ref([]);
@@ -183,6 +171,7 @@ const detailLoading = ref(false);
 const showSelectionPopup = ref(false);
 const selectionTitle = ref('');
 const selectedStudents = ref([]);
+const selectedCount = ref(0);
 
 // --- 表格定义 ---
 const sensoryRows = [
@@ -202,9 +191,11 @@ const dimensionRows = [
 ];
 
 const resourceRows = [
+  { key: '我的植物朋友照片', label: '我的植物朋友照片点击次数' },
   { key: '感受小锦囊', label: '感受小锦囊' },
   { key: '顺序百宝箱', label: '顺序百宝箱' },
   { key: '词语百花园', label: '词语百花园' },
+  { key: '__none_clicked__', label: '未点击任何资源人数' },
 ];
 
 const writingRows = [
@@ -230,11 +221,30 @@ const getDimensionCount = (name) => {
 };
 
 const getResourceCount = (resourceName) => {
+  if (resourceName === '__none_clicked__') return getNoResourceClickStudentCount();
   const rows = Object.entries(stats.value.table3 || {});
   return rows.reduce((sum, [key, count]) => {
     if (String(key).startsWith(resourceName)) return sum + Number(count || 0);
     return sum;
   }, 0);
+};
+
+const getResourceUserCount = (resourceName) => {
+  if (resourceName === '__none_clicked__') return getNoResourceClickStudentCount();
+  const students = studentList.value || [];
+  return students.filter((student) => {
+    const clickMap = student.resource_click_stats || {};
+    return Object.entries(clickMap).some(([k, v]) => String(k).startsWith(resourceName) && Number(v || 0) > 0);
+  }).length;
+};
+
+const getNoResourceClickStudentCount = () => {
+  const students = studentList.value || [];
+  return students.filter((student) => {
+    const clickMap = student.resource_click_stats || {};
+    const totalClicks = Object.values(clickMap).reduce((sum, v) => sum + Number(v || 0), 0);
+    return totalClicks === 0;
+  }).length;
 };
 
 const getWritingCount = (name) => {
@@ -286,35 +296,42 @@ const getWritingAliases = (name) => {
   return aliasMap[name] || [name];
 };
 
-const openSelectionPopup = (type, row) => {
-  const students = (studentList.value || []).filter((student) => {
-    if (type === 'sensory') {
-      const values = student.sensory_evaluations || [];
-      const aliases = getSensoryAliases(row.key);
-      return values.some((item) => aliases.includes(String(item).trim()));
-    }
-    if (type === 'dimension') {
-      const values = student.dimension_evaluations || [];
-      const aliases = getDimensionAliases(row.key);
-      return values.some((item) => aliases.includes(String(item).trim()));
-    }
-    if (type === 'resource') {
+const isStudentSelectedByRow = (student, type, key) => {
+  if (type === 'sensory') {
+    const values = student.sensory_evaluations || [];
+    const aliases = getSensoryAliases(key);
+    return values.some((item) => aliases.includes(String(item).trim()));
+  }
+  if (type === 'dimension') {
+    const values = student.dimension_evaluations || [];
+    const aliases = getDimensionAliases(key);
+    return values.some((item) => aliases.includes(String(item).trim()));
+  }
+  if (type === 'resource') {
+    if (key === '__none_clicked__') {
       const statsMap = student.resource_click_stats || {};
-      return Object.entries(statsMap).some(([k, v]) => String(k).startsWith(row.key) && Number(v || 0) > 0);
+      const totalClicks = Object.values(statsMap).reduce((sum, v) => sum + Number(v || 0), 0);
+      return totalClicks === 0;
     }
-    if (type === 'writing') {
-      const values = student.stage5_checks || [];
-      const aliases = getWritingAliases(row.key);
-      return values.some((item) => aliases.includes(String(item).trim()));
-    }
-    return false;
-  });
+    const statsMap = student.resource_click_stats || {};
+    return Object.entries(statsMap).some(([k, v]) => String(k).startsWith(key) && Number(v || 0) > 0);
+  }
+  if (type === 'writing') {
+    const values = student.stage5_checks || [];
+    const aliases = getWritingAliases(key);
+    return values.some((item) => aliases.includes(String(item).trim()));
+  }
+  return false;
+};
 
-  selectedStudents.value = students.map((s) => ({
-    id: String(s.student_id || '').padStart(2, '0'),
-    name: s.student_name || '未命名',
-    isLoggedIn: !!s.is_logged_in,
-  }));
+const openSelectionPopup = (type, row) => {
+  selectedStudents.value = (studentList.value || [])
+    .filter((s) => isStudentSelectedByRow(s, type, row.key))
+    .map((s) => ({
+      id: String(s.student_id || '').padStart(2, '0'),
+      name: s.student_name || '未命名',
+    }));
+  selectedCount.value = selectedStudents.value.length;
   selectionTitle.value = row.label;
   showSelectionPopup.value = true;
 };
@@ -334,6 +351,9 @@ const fetchDashboardData = async () => {
       table5: res.data.table5_ai_count || 0,  
       resource_completed: res.data.resource_completed_count || 0,
     };
+    preloadTeacherAllImages(studentList.value).catch((error) => {
+      console.warn('Teacher image preloading failed:', error);
+    });
   } catch (err) {
     console.error('刷新大屏失败:', err);
   }
@@ -398,6 +418,41 @@ const initCharts = () => {
   const c3 = echarts.init(chart3Ref.value);
   const c4 = echarts.init(chart4Ref.value);
   charts = [c1, c2, c3, c4];
+
+  c1.on('click', (params) => {
+    const row = sensoryRows.find((r) => r.key === params?.name);
+    if (row) openSelectionPopup('sensory', row);
+  });
+
+  const dimensionChartMap = {
+    '无新发现': '我暂时没有新的发现',
+    '新观察': '我已经有了新的发现：（1）有以前没观察到的',
+    '新感受': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
+  };
+  c2.on('click', (params) => {
+    const key = dimensionChartMap[params?.name];
+    if (!key) return;
+    const row = dimensionRows.find((r) => r.key === key);
+    if (row) openSelectionPopup('dimension', row);
+  });
+
+  c3.on('click', (params) => {
+    const row = resourceRows.find((r) => r.label === params?.name);
+    if (row) openSelectionPopup('resource', row);
+  });
+
+  const writingChartMap = {
+    '多方介绍': '（1）我能从多方面介绍',
+    '有序介绍': '（2）我能有顺序介绍',
+    '分享习作': '2.我分享了我的习作',
+  };
+  c4.on('click', (params) => {
+    const key = writingChartMap[params?.name];
+    if (!key) return;
+    const row = writingRows.find((r) => r.key === key);
+    if (row) openSelectionPopup('writing', row);
+  });
+
   updateCharts();
 };
 
@@ -443,10 +498,18 @@ const updateCharts = () => {
     title: { text: '资源包热度排行', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     color: ['#f2bd27'],
-    grid: { left: '3%', right: '12%', bottom: '3%', containLabel: true },
+    grid: { left: '3%', right: '24%', bottom: '3%', containLabel: true },
     xAxis: { type: 'value', minInterval: 1 },
-    yAxis: { type: 'category', data: resourceRows.map(r => r.label).reverse(), axisLabel: { width: 80, overflow: 'truncate' } },
-    series: [{ type: 'bar', data: resourceRows.map(r => getResourceCount(r.key)).reverse(), label: { show: true, position: 'right', formatter: '{c}次' }, itemStyle: { borderRadius: [0, 4, 4, 0] } }]
+    yAxis: { type: 'category', inverse: true, data: resourceRows.map(r => r.label), axisLabel: { width: 140, overflow: 'truncate' } },
+    series: [{
+      type: 'bar',
+      data: resourceRows.map((r) => ({
+        value: getResourceCount(r.key),
+        userCount: getResourceUserCount(r.key),
+      })),
+      label: { show: true, position: 'right', formatter: (params) => `${params.data.userCount}人 ${params.data.value}次` },
+      itemStyle: { borderRadius: [0, 4, 4, 0] },
+    }]
   });
 
   // 4. 写作目标 (环形图) - 智能短化标签
@@ -548,7 +611,7 @@ onUnmounted(() => {
 .medal-icon { position: absolute; top: -8px; right: -6px; font-size: 18px; }
 
 /* 表格与图表布局 */
-.tables-container, .charts-container { 
+.analysis-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr); 
   gap: 24px;
@@ -615,7 +678,7 @@ onUnmounted(() => {
 /* 图表区 */
 .echart-instance { width: 100%; height: 280px; }
 
-@media (max-width: 900px) { .tables-container, .charts-container { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .analysis-grid { grid-template-columns: 1fr; } }
 
 /* 详情抽屉 */
 .loading-box { height: 100%; display: flex; justify-content: center; align-items: center; }

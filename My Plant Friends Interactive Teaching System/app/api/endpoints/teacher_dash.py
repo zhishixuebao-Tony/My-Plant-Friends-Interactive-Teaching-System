@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.db.mongodb import db_instance
+from app.utils.role_rules import is_judge_student_id
 
 
 class PasswordReq(BaseModel):
@@ -12,16 +13,16 @@ router = APIRouter()
 
 
 SENSORY_ALIAS_MAP = {
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '???': '???',
-    '??': '??',
+    '看了看': '看一看',
+    '看一看': '看一看',
+    '闻了闻': '闻一闻',
+    '闻一闻': '闻一闻',
+    '摸了摸': '摸一摸',
+    '摸一摸': '摸一摸',
+    '听一听': '听一听',
+    '尝了尝': '尝一尝',
+    '尝一尝': '尝一尝',
+    '其他': '其他',
 }
 
 DIMENSION_ALIAS_MAP = {
@@ -31,11 +32,8 @@ DIMENSION_ALIAS_MAP = {
     '评价一：能真实记录植物特点': '我已经有了新的发现：（1）有以前没观察到的',
     '评价一': '我已经有了新的发现：（1）有以前没观察到的',
     '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-    '评价二：能描写自己的感受': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
     '评价二：能描写出自己的感受': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
     '评价二': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-    '评价三：书写认真、字迹工整': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
-    '评价三': '我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）',
 }
 
 WRITING_ALIAS_MAP = {
@@ -77,53 +75,41 @@ def _student_id_query(raw_student_id: str) -> dict:
 @router.get('/dashboard/statistics')
 async def get_dashboard_stats():
     cursor = db_instance.db.students.find({}, {'_id': 0}).sort('student_id', 1)
-    all_students = await cursor.to_list(length=100)
+    all_students = await cursor.to_list(length=500)
+    real_students = [s for s in all_students if not is_judge_student_id(s.get('student_id'))]
 
-    sensory_pipeline = [
-        {'$unwind': '$sensory_evaluations'},
-        {'$group': {'_id': '$sensory_evaluations', 'count': {'$sum': 1}}},
-    ]
-    s_cursor = db_instance.db.students.aggregate(sensory_pipeline)
-    raw_sensory_stats = {item['_id']: item['count'] async for item in s_cursor}
+    raw_sensory_stats = {}
+    raw_dim_stats = {}
+    raw_writing_stats = {}
+    resource_stats = {}
+
+    for student in real_students:
+        for item in student.get('sensory_evaluations') or []:
+            raw_sensory_stats[item] = raw_sensory_stats.get(item, 0) + 1
+
+        for item in student.get('dimension_evaluations') or []:
+            raw_dim_stats[item] = raw_dim_stats.get(item, 0) + 1
+
+        for key, count in (student.get('resource_click_stats') or {}).items():
+            resource_stats[key] = resource_stats.get(key, 0) + int(count or 0)
+
+        for item in student.get('stage5_checks') or []:
+            raw_writing_stats[item] = raw_writing_stats.get(item, 0) + 1
+
     sensory_stats = _normalize_stats(raw_sensory_stats, SENSORY_ALIAS_MAP)
-
-    dim_pipeline = [
-        {'$unwind': '$dimension_evaluations'},
-        {'$group': {'_id': '$dimension_evaluations', 'count': {'$sum': 1}}},
-    ]
-    d_cursor = db_instance.db.students.aggregate(dim_pipeline)
-    raw_dim_stats = {item['_id']: item['count'] async for item in d_cursor}
     dim_stats = _normalize_stats(raw_dim_stats, DIMENSION_ALIAS_MAP)
-
-    res_pipeline = [
-        {'$project': {'stats': {'$objectToArray': '$resource_click_stats'}}},
-        {'$unwind': '$stats'},
-        {'$group': {'_id': '$stats.k', 'count': {'$sum': '$stats.v'}}},
-    ]
-    r_cursor = db_instance.db.students.aggregate(res_pipeline)
-    resource_stats = {item['_id']: item['count'] async for item in r_cursor}
-
-    # 添加写作目标统计
-    writing_pipeline = [
-        {'$unwind': '$stage5_checks'},
-        {'$group': {'_id': '$stage5_checks', 'count': {'$sum': 1}}},
-    ]
-    w_cursor = db_instance.db.students.aggregate(writing_pipeline)
-    raw_writing_stats = {item['_id']: item['count'] async for item in w_cursor}
     writing_stats = _normalize_stats(raw_writing_stats, WRITING_ALIAS_MAP)
 
-    res_completed_count = len([s for s in all_students if s.get('has_viewed_resources') is True])
-
     return {
-        'logged_in_count': len([s for s in all_students if s.get('is_logged_in')]),
-        'total_students': len(all_students),
+        'logged_in_count': len([s for s in real_students if s.get('is_logged_in')]),
+        'total_students': len(real_students),
         'table1_sensory': sensory_stats,
         'table2_dimension': dim_stats,
         'table3_resource': resource_stats,
         'table4_writing': writing_stats,
-        'table5_ai_count': len([s for s in all_students if s.get('has_completed_ai')]),
-        'resource_completed_count': res_completed_count,
-        'students_list': all_students,
+        'table5_ai_count': len([s for s in real_students if s.get('has_completed_ai')]),
+        'resource_completed_count': len([s for s in real_students if s.get('has_viewed_resources') is True]),
+        'students_list': real_students,
     }
 
 
@@ -166,4 +152,4 @@ async def verify_teacher_password(req: PasswordReq):
 
     if input_password == stored_password:
         return {'success': True}
-    return {'success': False, 'message': '??????????'}
+    return {'success': False, 'message': '密码错误'}

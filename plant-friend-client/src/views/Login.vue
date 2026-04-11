@@ -56,6 +56,7 @@ import { ref } from 'vue';
 import { useUserStore } from '../store/user';
 import { showToast } from 'vant';
 import axios from 'axios';
+import { preloadStudentAllImages } from '../utils/imagePreloader';
 
 const userStore = useUserStore();
 const inputId = ref('');
@@ -110,6 +111,9 @@ const onFinalConfirm = () => {
   });
 
   userStore.setStage('welcome');
+  preloadStudentAllImages(studentFullData.value).catch((error) => {
+    console.warn('Student image preloading failed:', error);
+  });
   window.dispatchEvent(new Event('student-login-success'));
   showToast('登录成功');
 };
@@ -254,7 +258,6 @@ const handleTeacherLogin = async () => {
 }
 
 </style>
-
 
 
 

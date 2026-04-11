@@ -1,97 +1,86 @@
 ﻿<template>
   <div class="stage-container">
-    <div class="top-nav">试着写清楚</div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">试着写清楚</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        @click="submitStage4"
+        :loading="loading"
+        :disabled="!canGoNext"
+        class="top-nav-action"
+      >
+        下一步
+      </van-button>
+    </div>
 
     <div class="resource-layout">
-      <div class="tab-nav">
-        <button 
-          class="tab-button" 
-          :class="{ active: activeTab === 'resources' }"
-          @click="activeTab = 'resources'"
-        >
-          写作资源包
-        </button>
-        <button 
-          class="tab-button" 
-          :class="{ active: activeTab === 'photos' }"
-          @click="activeTab = 'photos'"
-        >
-          我的植物朋友照片
-        </button>
-      </div>
-
-      <div class="content-area">
-        <div v-show="activeTab === 'resources'" class="tab-content resource-tab">
-          <div class="pack-list-view">
-            <div class="pack-grid">
-              <div v-for="pack in resourcePacks" :key="pack.id" class="pack-card">
-                <div class="pack-card-title">{{ pack.title }}</div>
-                <van-image
-                  :src="pack.images[0]?.url"
-                  :alt="pack.images[0]?.name || pack.title"
-                  fit="contain"
-                  radius="10"
-                  class="pack-card-image"
-                  @click="onPreview(pack.id, 0)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-show="activeTab === 'photos'" class="tab-content photo-tab">
-          <div v-if="plantPhotos.length > 0" class="photo-list-view">
-            <div class="photo-grid">
-              <div 
-                v-for="(photo, index) in plantPhotos" 
-                :key="index" 
-                class="photo-card"
+      <div class="pack-list-view">
+        <div class="pack-grid">
+          <div class="pack-card">
+            <div class="pack-card-title">我的植物朋友</div>
+            <div class="plant-photo-strip">
+              <button
+                v-for="(photo, index) in displayedPlantPhotos"
+                :key="index"
+                type="button"
+                class="plant-photo-btn"
+                @click="onPhotoPreview(index)"
               >
                 <van-image
                   :src="photo"
                   fit="cover"
                   radius="10"
-                  class="photo-image"
-                  @click="onPhotoPreview(index)"
+                  class="plant-photo-image"
                 />
-              </div>
+              </button>
             </div>
-            <div class="photo-tip">点击照片可放大查看植物朋友</div>
           </div>
-          <div v-else class="empty-photos">
+
+          <div v-for="pack in resourcePacks" :key="pack.id" class="pack-card">
+            <div class="pack-card-title">{{ pack.title }}</div>
+            <van-image
+              :src="pack.images[0]?.url"
+              :alt="pack.images[0]?.name || pack.title"
+              fit="contain"
+              radius="10"
+              class="pack-card-image"
+              @click="onPreview(pack.id, 0)"
+            />
           </div>
         </div>
-      </div>
-
-      <div class="action-footer">
-        <van-button type="primary" block round size="large" @click="submitStage4" :loading="loading">查看完资源包，下一步</van-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 import axios from 'axios';
 import { useUserStore } from '../store/user';
 import { showConfirmDialog, showImagePreview, showToast } from 'vant';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 const loading = ref(false);
-const activeTab = ref('resources');
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.resourcePack));
 
-const plantPhotos = computed(() => {
-  return userStore.prePlantPhotos || [];
-});
+const displayedPlantPhotos = computed(() => (userStore.prePlantPhotos || []).slice(0, 3));
 
 const onPhotoPreview = (startIndex) => {
-  if (plantPhotos.value.length === 0) return;
+  if (displayedPlantPhotos.value.length === 0) return;
   showImagePreview({
-    images: plantPhotos.value,
+    images: displayedPlantPhotos.value,
     startPosition: startIndex,
     closeable: true,
     closeOnClickOverlay: true,
     teleport: 'body',
+  });
+
+  axios.post(`/api/student/track-resource-click/${userStore.studentId}/我的植物朋友照片`).catch((error) => {
+    console.warn('上报植物照片点击失败:', error);
   });
 };
 
@@ -134,6 +123,7 @@ const onPreview = async (packId, index) => {
 };
 
 const submitStage4 = async () => {
+  if (!canGoNext.value) return;
   try {
     await showConfirmDialog({
       title: '确认进入下一步',
@@ -178,32 +168,29 @@ const submitStage4 = async () => {
   overflow: hidden;
 }
 
-.resource-header {
-  font-size: 20px;
-  font-weight: bold;
-}
-
 .pack-list-view {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   width: 100%;
 }
 
 .pack-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
   justify-content: center;
-  width: 100%;
-  max-width: 1200px;
+  width: min(100%, 1200px);
+  height: 100%;
   margin: 0 auto;
 }
 
 .pack-card {
+  --media-height: clamp(160px, 24vh, 280px);
   background: #fff;
   border-radius: 16px;
   padding: 24px;
@@ -212,30 +199,8 @@ const submitStage4 = async () => {
   gap: 18px;
   border: 1px solid #e8edf6;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  height: auto;
+  height: 100%;
   min-height: 0;
-}
-
-@media (min-width: 900px) {
-  .pack-grid {
-    grid-template-columns: repeat(3, minmax(280px, 1fr));
-    gap: 24px;
-    max-width: 1400px;
-  }
-  
-  .pack-card {
-    padding: 28px;
-    gap: 20px;
-  }
-  
-  .pack-card-title {
-    font-size: 18px;
-  }
-  
-  .pack-card-image {
-    max-height: 350px;
-    min-height: 200px;
-  }
 }
 
 .pack-card-title {
@@ -246,9 +211,9 @@ const submitStage4 = async () => {
 
 .pack-card-image {
   width: 100%;
-  height: auto;
-  max-height: 300px;
-  min-height: 150px;
+  height: var(--media-height);
+  max-height: var(--media-height);
+  min-height: var(--media-height);
   object-fit: contain;
   border: 1px solid #dbe4f3;
   border-radius: 10px;
@@ -260,165 +225,25 @@ const submitStage4 = async () => {
   flex: 1;
 }
 
-.action-footer {
-  margin-top: auto;
-  flex-shrink: 0;
-}
-
-@media (max-width: 900px) {
-  .pack-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(3, auto);
-    height: auto;
-  }
-
-  .pack-card:first-child,
-  .pack-card:nth-child(2),
-  .pack-card:nth-child(3) {
-    grid-column: 1;
-    grid-row: auto;
-  }
-  
-  .pack-card:first-child {
-    grid-row: 1;
-  }
-  
-  .pack-card:nth-child(2) {
-    grid-row: 2;
-  }
-  
-  .pack-card:nth-child(3) {
-    grid-row: 3;
-  }
-
-  .pack-card {
-    padding: 12px;
-  }
-
-  .pack-card-title {
-    font-size: 15px;
-  }
-  
-  .pack-card-image {
-    height: clamp(140px, 22vh, 200px);
-  }
-
-}
-
-
-.top-nav {
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  border-bottom: 1px solid #ebedf0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  font-size: 16px;
-  font-weight: 700;
-  color: #323233;
-  flex-shrink: 0;
-}
-
-.top-nav {
-  min-height: 56px !important;
-  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  border-bottom: 1px solid #dfe6f3;
-  box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
-  font-size: 17px;
-  font-weight: 700;
-  color: #1f2d3d;
-  letter-spacing: 0.2px;
-  flex-shrink: 0;
-}
-
-.tab-nav {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #e8edf6;
-  padding-bottom: 8px;
-}
-
-.tab-button {
-  flex: 1;
-  padding: 12px 16px;
-  background: #f5f7fb;
-  border: 1px solid #e8edf6;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #4b5d75;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-  background: #edf1f7;
-}
-
-.tab-button.active {
-  background: #377dff;
-  border-color: #377dff;
-  color: white;
-  box-shadow: 0 2px 6px rgba(55, 125, 255, 0.25);
-}
-
-.content-area {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.tab-content {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.photo-list-view {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
-.photo-grid {
+.plant-photo-strip {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
+  gap: 10px;
 }
 
-.photo-card {
-  background: #fff;
-  border-radius: 10px;
-  border: 1px solid #e8edf6;
-  overflow: hidden;
+.plant-photo-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.photo-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.photo-image {
+.plant-photo-image {
   width: 100%;
-  height: 220px;
-  display: block;
+  height: var(--media-height);
+  border: 1px solid #dbe4f3;
+  background: #f8fbff;
 }
 
 .photo-tip {
@@ -428,38 +253,101 @@ const submitStage4 = async () => {
   margin-top: 8px;
 }
 
-.empty-photos {
-  flex: 1;
-  min-height: 0;
+.top-nav {
+  min-height: 56px !important;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border-bottom: 1px solid #dfe6f3;
+  box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+  flex-shrink: 0;
 }
 
-/* 响应式适配 */
+.top-nav-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2d3d;
+  letter-spacing: 0.2px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
+}
+
+:deep(.top-nav-action.van-button) {
+  height: 34px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .pack-grid {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+  }
+
+  .pack-card {
+    --media-height: clamp(200px, 25vh, 340px);
+    padding: 28px;
+    gap: 20px;
+  }
+
+  .pack-card-title {
+    font-size: 18px;
+  }
+
+}
+
 @media (max-width: 900px) {
-  .photo-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    max-width: 100%;
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
   }
-  
-  .photo-image {
-    height: 180px;
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 12px;
+    padding-inline: 8px;
   }
-  
-  .tab-button {
-    padding: 10px 12px;
-    font-size: 14px;
+
+  .pack-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
+
+  .pack-card {
+    --media-height: clamp(120px, 18vh, 200px);
+    padding: 12px;
+  }
+
+  .pack-card-title {
+    font-size: 15px;
+  }
+
 }
 
 @media (max-width: 600px) {
-  .photo-grid {
+  .pack-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plant-photo-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
-  
-  .photo-image {
-    height: 150px;
-  }
 }
-
 </style>

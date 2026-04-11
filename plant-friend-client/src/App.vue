@@ -2,6 +2,7 @@
   <div class="app-main">
     <div class="content-wrapper">
       <TeacherDash v-if="isTeacherMode" />
+      <OpsControl v-else-if="isOpsMode" />
 
       <template v-else>
   
@@ -40,9 +41,11 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import axios from 'axios';
 import { useUserStore } from './store/user';
 import FinalDraft from './views/FinalDraft.vue';
 import Login from './views/Login.vue';
+import OpsControl from './views/OpsControl.vue';
 import RecordCard from './views/RecordCard.vue';
 import RecordCardTransition from './views/RecordCardTransition.vue';
 import ResourcePack from './views/ResourcePack.vue';
@@ -54,9 +57,11 @@ import Welcome from './views/Welcome.vue';
 
 const userStore = useUserStore();
 const isTeacherMode = ref(false);
+const isOpsMode = ref(false);
+const studentControlSocket = ref(null);
 
-const isStudentFlowActive = computed(() => !isTeacherMode.value && userStore.currentStage !== '0');
-const showStudentStageNav = computed(() => !isTeacherMode.value);
+const isStudentFlowActive = computed(() => !isTeacherMode.value && !isOpsMode.value && userStore.currentStage !== '0');
+const showStudentStageNav = computed(() => !isTeacherMode.value && !isOpsMode.value);
 
 const stageNavItems = [
   { stage: '0', label: '登录页' },
@@ -104,11 +109,60 @@ const onStudentLoginSuccess = () => {
   requestStudentFullscreen();
 };
 
+const getWsBase = () => {
+  const base = axios.defaults.baseURL || window.location.origin;
+  if (base.startsWith('https')) return base.replace(/^https/, 'wss');
+  if (base.startsWith('http')) return base.replace(/^http/, 'ws');
+  return 'ws://127.0.0.1:8000';
+};
+
+const connectStudentControlSocket = () => {
+  if (isTeacherMode.value || isOpsMode.value) return;
+  if (studentControlSocket.value) return;
+
+  const clientId = `student_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const ws = new WebSocket(`${getWsBase()}/ws/${clientId}`);
+  studentControlSocket.value = ws;
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data || '{}');
+      if (data.action === 'NEXT_BUTTON_CONTROL_UPDATE') {
+        if (data.controls) {
+          userStore.applyNextButtonControlState(data.controls);
+        } else if (data.key) {
+          userStore.updateOneNextButtonControl(data.key, data.enabled);
+        }
+      }
+    } catch (_) {}
+  };
+
+  ws.onclose = () => {
+    studentControlSocket.value = null;
+    if (!isTeacherMode.value && !isOpsMode.value) {
+      setTimeout(connectStudentControlSocket, 1200);
+    }
+  };
+
+  ws.onerror = () => ws.close();
+};
+
+const fetchStudentControlState = async () => {
+  if (isTeacherMode.value || isOpsMode.value) return;
+  try {
+    const res = await axios.get('/api/ops/next-buttons');
+    if (res.data?.controls) {
+      userStore.applyNextButtonControlState(res.data.controls);
+    }
+  } catch (_) {}
+};
+
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
   isTeacherMode.value = params.get('role') === 'teacher';
+  isOpsMode.value = params.get('role') === 'ops';
 
-  if (!isTeacherMode.value && userStore.studentId) {
+  if (!isTeacherMode.value && !isOpsMode.value && userStore.studentId) {
     try {
       await userStore.restorePlantPhotos();
     } catch (error) {
@@ -122,6 +176,8 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeyDown, true);
   window.addEventListener('student-login-success', onStudentLoginSuccess);
 
+  fetchStudentControlState();
+  connectStudentControlSocket();
   requestStudentFullscreen();
 });
 
@@ -129,6 +185,10 @@ onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   window.removeEventListener('keydown', onKeyDown, true);
   window.removeEventListener('student-login-success', onStudentLoginSuccess);
+  if (studentControlSocket.value) {
+    studentControlSocket.value.close();
+    studentControlSocket.value = null;
+  }
 });
 
 watch(

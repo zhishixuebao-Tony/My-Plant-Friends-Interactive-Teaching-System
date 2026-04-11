@@ -1,53 +1,40 @@
 ﻿<template>
   <div class="stage-container">
-    <div class="top-nav">我与植物朋友共成长</div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">我与植物朋友共成长</div>
+      <van-button
+        v-if="!showCertificate"
+        type="primary"
+        round
+        size="small"
+        :loading="isSubmitting"
+        :disabled="!canGoNext"
+        loading-text="提交中"
+        @click="submitStage5"
+        class="top-nav-action"
+      >
+        完成并领取奖状
+      </van-button>
+      <span v-else class="top-nav-spacer" aria-hidden="true"></span>
+    </div>
 
     <div v-if="!showCertificate" class="main-board">
       <div class="vine-stage">
         <div class="stars-summary">当前总计获得：<span>{{ totalStars }}</span> 颗星</div>
-        <svg class="vine-svg" viewBox="0 0 1200 680" preserveAspectRatio="none" aria-hidden="true">
-          <path
-            d="M 90 590 C 250 520, 330 450, 430 360 C 520 280, 620 230, 740 190 C 860 150, 980 100, 1110 70"
-            class="vine-path"
-          />
-          <path
-            d="M 170 560 C 250 580, 300 620, 350 660"
-            class="vine-branch"
-          />
-          <path
-            d="M 520 300 C 600 320, 650 360, 700 410"
-            class="vine-branch"
-          />
-          <path
-            d="M 820 160 C 900 180, 960 230, 1020 290"
-            class="vine-branch"
-          />
-        </svg>
+        <div class="trees-scene" aria-hidden="true"></div>
 
-        <div class="fruit fruit-a" aria-hidden="true">
-          <span class="leaf"></span>
-          <span class="body">🍎</span>
-        </div>
-        <div class="fruit fruit-b" aria-hidden="true">
-          <span class="leaf"></span>
-          <span class="body">🍎</span>
-        </div>
-        <div class="fruit fruit-c current" aria-hidden="true">
-          <span class="leaf"></span>
-          <span class="body pulse">🍎</span>
-        </div>
-
-        <div class="node-label label-a">
+        <div class="tree-label tree-a">
           <div class="title">观察</div>
           <div class="sub">已获得 1 ⭐</div>
         </div>
 
-        <div class="node-label label-b">
+        <div class="tree-label tree-b">
           <div class="title">记录</div>
           <div class="sub">已获得 {{ stage3Stars }} ⭐</div>
         </div>
 
-        <div class="node-label label-c">
+        <div class="tree-label tree-c">
           <div class="title">试写</div>
         </div>
 
@@ -96,20 +83,6 @@
         </section>
       </div>
 
-      <div class="action-footer">
-        <van-button type="default" block round size="large" class="prev-btn" @click="goPrevStep">上一步</van-button>
-        <van-button
-          type="primary"
-          block
-          round
-          size="large"
-          :loading="isSubmitting"
-          loading-text="正在提交..."
-          @click="submitStage5"
-        >
-          完成全部挑战，领取荣誉证书
-        </van-button>
-      </div>
     </div>
 
     <div v-else class="certificate-wrap">
@@ -129,9 +102,6 @@
         </div>
       </div>
 
-      <div class="cert-actions">
-        <van-button type="default" round size="large" @click="backToVinePage">上一步</van-button>
-      </div>
     </div>
   </div>
 </template>
@@ -142,11 +112,13 @@ import axios from 'axios';
 import { showToast } from 'vant';
 import confetti from 'canvas-confetti';
 import { useUserStore } from '../store/user';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 
 const isSubmitting = ref(false);
 const showCertificate = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.finalDraft));
 
 const hasMultiaspect = ref(false);  
 const hasOrderly = ref(false);      
@@ -164,17 +136,6 @@ const toggleOrderly = () => {
 const toggleShared = () => {
   hasShared.value = !hasShared.value;
 };
-
-const selectedStage5Checks = computed(() => {
-  const checks = [];
-  if (hasMultiaspect.value || hasOrderly.value) {
-    checks.push('1. 我试着写清楚了');
-  }
-  if (hasShared.value) {
-    checks.push('2. 我分享了我的习作');
-  }
-  return checks;
-});
 
 const stage1Stars = computed(() => Number(userStore.stage1Stars ?? 1));
 const stage3Stars = computed(() => Number(userStore.stage3Stars ?? 0));
@@ -224,6 +185,7 @@ const launchConfetti = () => {
 };
 
 const submitStage5 = async () => {
+  if (!canGoNext.value) return;
   if (isSubmitting.value) return;
 
   isSubmitting.value = true;
@@ -266,13 +228,6 @@ const submitStage5 = async () => {
   isSubmitting.value = false;
 };
 
-const goPrevStep = () => {
-  userStore.setStage('4');
-};
-
-const backToVinePage = () => {
-  showCertificate.value = false;
-};
 </script>
 
 <style scoped>
@@ -287,24 +242,40 @@ const backToVinePage = () => {
 .top-nav {
   min-height: 56px;
   padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #f4fbf6 100%);
   border-bottom: 1px solid #d9eede;
   box-shadow: 0 3px 10px rgba(45, 138, 78, 0.08);
+  flex-shrink: 0;
+}
+
+.top-nav-title {
   font-size: 20px;
   font-weight: 800;
   color: #1f5d35;
-  flex-shrink: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
 }
 
 .main-board {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
   padding: 12px 16px 16px;
   box-sizing: border-box;
 }
@@ -330,125 +301,72 @@ const backToVinePage = () => {
 }
 
 .vine-stage {
+  flex: 1;
   position: relative;
   min-height: 0;
   border-radius: 26px;
-  background: linear-gradient(165deg, #ffffff 0%, #f7fdf8 100%);
+  background: #ffffff;
   border: 2px solid #ccead5;
   overflow: hidden;
 }
 
-.vine-svg {
+.trees-scene {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  background-image:
+    url('/final-draft/three-trees.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
-.vine-path {
-  fill: none;
-  stroke: #2d8a4e;
-  stroke-width: 14;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 8 2;
-  opacity: 0.95;
-}
-
-.vine-branch {
-  fill: none;
-  stroke: #49a968;
-  stroke-width: 8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 6 2;
-  opacity: 0.9;
-}
-
-.fruit {
+.tree-label {
   position: absolute;
-  width: 56px;
-  height: 60px;
-  pointer-events: none;
-}
-
-.fruit .leaf {
-  position: absolute;
-  left: 50%;
-  top: -6px;
-  width: 16px;
-  height: 10px;
-  background: #5cc77a;
-  border-radius: 100% 0 100% 0;
-  transform: translateX(-10px) rotate(-28deg);
-  box-shadow: inset -1px -1px 0 rgba(0, 0, 0, 0.12);
-}
-
-.fruit .body {
-  position: absolute;
-  left: 50%;
-  top: 2px;
-  font-size: 48px;
-  line-height: 1;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.18));
-}
-
-.fruit-a { left: 12%; bottom: 12%; }
-.fruit-b { left: 48%; bottom: 42%; }
-.fruit-c { right: 13%; top: 8%; }
-
-.node-label {
-  position: absolute;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(203, 233, 212, 0.95);
   color: #1f5d35;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
   text-align: center;
+  box-shadow: 0 6px 14px rgba(23, 93, 54, 0.12);
 }
 
-.node-label .title {
+.tree-label .title {
   font-size: 26px;
   font-weight: 900;
   line-height: 1.2;
 }
 
-.node-label .sub {
+.tree-label .sub {
   margin-top: 4px;
   font-size: 20px;
   font-weight: 800;
   color: #f49b00;
 }
 
-.label-a { left: calc(12% - 67px); bottom: calc(12% - 62px); width: 190px; text-align: center; }
-.label-b { left: calc(48% - 58px); bottom: calc(42% - 66px); width: 172px; }
-.label-c { right: calc(13% - 24px); top: calc(8% + 58px); width: 110px; }
-
-.pulse {
-  animation: pulseGlow 1.5s infinite;
-}
-
-@keyframes pulseGlow {
-  0% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.08); }
-  100% { transform: translateX(-50%) scale(1); }
-}
+.tree-a { left: 13.2%; bottom: 9%; width: 120px; }
+.tree-b { left: 42%; bottom: 9%; width: 120px; }
+.tree-c { right: 14%; bottom: 58%; width: 120px; }
 
 .stage5-check-card {
   position: absolute;
-  right: 3.5%;
-  top: calc(8% + 110px);
-  width: min(34vw, 420px);
-  background: #fffdf7;
+  z-index: 2;
+  right: 6%;
+  bottom: 5%;
+  width: min(27vw, 310px);
+  background: rgba(255, 253, 247, 0.70);
   border: 2px solid #f3dfb5;
-  border-radius: 20px;
-  padding: 12px;
+  border-radius: 16px;
+  padding: 8px;
   box-shadow: 0 8px 18px rgba(188, 140, 50, 0.12);
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: #6f5518;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .check-group {
@@ -504,45 +422,45 @@ const backToVinePage = () => {
 }
 
 .stage5-star-tip {
-  margin-top: 8px;
+  margin-top: 6px;
   text-align: right;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: #f49b00;
 }
 
 .eval-box {
   border: 1px solid #e1e8f5;
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   min-height: 0;
 }
 
 .group-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: #2e4058;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .check-row {
   width: 100%;
   border: 1px solid #d7e0ef;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
-  padding: 10px 12px;
+  padding: 7px 8px;
   text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
-  min-height: 72px;
-  font-size: 18px;
+  min-height: 50px;
+  font-size: 15px;
   font-weight: 600;
   color: #223247;
 }
@@ -563,15 +481,15 @@ const backToVinePage = () => {
 }
 
 .square {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   border: 2px solid #c2cede;
-  border-radius: 12px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #377dff;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   flex-shrink: 0;
   background: #f8fbff;
@@ -582,22 +500,17 @@ const backToVinePage = () => {
   background: #eaf1ff;
 }
 
-.action-footer {
-  padding: 6px 0 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: center;
-}
-
-.prev-btn {
-  min-width: 130px;
-}
-
 :deep(.van-button--large) {
   height: 54px;
   font-size: 22px;
   font-weight: 800;
+}
+
+:deep(.top-nav-action.van-button) {
+  height: 34px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 :deep(.van-button--primary) {
@@ -670,24 +583,30 @@ const backToVinePage = () => {
   color: #8a6a2b;
 }
 
-.cert-actions {
-  width: min(92vw, 860px);
-  display: flex;
-  justify-content: flex-end;
-}
-
 @media (max-width: 1200px) {
-  .node-label .title { font-size: 20px; }
-  .node-label .sub { font-size: 16px; }
+  .tree-label .title { font-size: 20px; }
+  .tree-label .sub { font-size: 16px; }
   .check-label { font-size: 15px; }
-  .stage5-check-card { width: min(39vw, 380px); }
-  .fruit .body { font-size: 40px; }
+  .stage5-check-card { width: min(29vw, 300px); top: 43%; right: 5.5%; }
+  .tree-a { left: 11%; width: 172px; }
+  .tree-b { left: 39%; width: 172px; }
+  .tree-c { right: 20%; width: 110px; top: 19%; }
   .cert-title { font-size: 44px; }
   .cert-body { font-size: 22px; }
   .badge-title { font-size: 32px; }
 }
 
 @media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+
   .main-board { padding: 10px; }
   .stars-summary { font-size: 16px; left: 10px; top: 10px; padding: 6px 10px; }
   .stars-summary span { font-size: 19px; }
@@ -697,18 +616,10 @@ const backToVinePage = () => {
     top: auto;
     bottom: 5%;
   }
-  .node-label .title { font-size: 17px; }
-  .node-label .sub { font-size: 14px; }
-  .fruit .body { font-size: 34px; }
-  .label-a { left: calc(12% - 47px); bottom: calc(12% - 52px); width: 150px; text-align: center; }
-  .fruit-b { left: 49%; bottom: 43%; }
-  .label-b { left: calc(49% - 46px); bottom: calc(43% - 56px); width: 148px; }
-  .label-c { right: calc(13% - 18px); top: calc(8% + 52px); width: 90px; }
-  .action-footer {
-    grid-template-columns: 1fr;
-  }
-  .prev-btn {
-    width: 100%;
-  }
+  .tree-label .title { font-size: 17px; }
+  .tree-label .sub { font-size: 14px; }
+  .tree-a { left: 7%; bottom: 23%; width: 132px; }
+  .tree-b { left: 34%; bottom: 23%; width: 132px; }
+  .tree-c { right: 10%; top: 17%; width: 90px; }
 }
 </style>

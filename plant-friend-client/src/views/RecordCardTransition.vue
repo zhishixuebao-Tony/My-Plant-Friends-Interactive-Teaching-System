@@ -27,9 +27,9 @@
         </div>
       </div>
 
-      <button type="button" class="grass-btn" @click="goNext">
+      <button type="button" class="grass-btn" :disabled="!canGoNext" @click="goNext">
         <span class="grass-icon"></span>
-        <span>继续成长</span>
+        <span>下一步</span>
       </button>
     </div>
   </div>
@@ -38,8 +38,10 @@
 <script setup>
 import { computed } from 'vue';
 import { useUserStore } from '../store/user';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.recordCardTransition));
 
 const displaySelections = computed(() => {
   const selections = userStore.dimensionSelections || [];
@@ -93,6 +95,7 @@ const starsMessage = computed(() => {
 });
 
 const goNext = () => {
+  if (!canGoNext.value) return;
   userStore.setStage('4');
 };
 </script>
@@ -123,7 +126,7 @@ const goNext = () => {
   left: 7vw;
   top: 50%;
   transform: translateY(-50%);
-  width: min(30vw, 420px);
+  width: min(34vw, 500px);
 }
 
 .book-card {
@@ -269,6 +272,11 @@ const goNext = () => {
   box-shadow: 0 12px 22px rgba(28, 86, 49, 0.25);
 }
 
+.grass-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .grass-btn:active {
   transform: translateY(1px) scale(0.99);
 }
@@ -303,7 +311,7 @@ const goNext = () => {
 @media (max-width: 900px) {
   .book-area {
     left: 3vw;
-    width: min(36vw, 280px);
+    width: min(40vw, 340px);
   }
 
   .right-area {

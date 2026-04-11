@@ -1,6 +1,7 @@
 from fastapi import WebSocket
 from typing import Dict
 
+
 class WSManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
@@ -14,9 +15,29 @@ class WSManager:
             del self.active_connections[client_id]
 
     async def notify_teacher(self, message: dict):
-        """学生每按一次'下一步'，调用此方法让教师端无刷新更新统计图表"""
-        teacher_ws = self.active_connections.get("teacher_01")
-        if teacher_ws:
+        teacher_ws = self.active_connections.get('teacher_01')
+        if not teacher_ws:
+            return
+        try:
             await teacher_ws.send_json(message)
+        except Exception:
+            self.disconnect('teacher_01')
+
+    async def notify_clients_by_prefix(self, client_prefix: str, message: dict):
+        dead_clients = []
+        for client_id, ws in self.active_connections.items():
+            if not str(client_id).startswith(client_prefix):
+                continue
+            try:
+                await ws.send_json(message)
+            except Exception:
+                dead_clients.append(client_id)
+
+        for client_id in dead_clients:
+            self.disconnect(client_id)
+
+    async def notify_students(self, message: dict):
+        await self.notify_clients_by_prefix('student_', message)
+
 
 ws_manager = WSManager()

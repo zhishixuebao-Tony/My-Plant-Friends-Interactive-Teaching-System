@@ -1,6 +1,10 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <div class="top-nav">看一看，向同学“学一学”</div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">看一看，向同学“学一学”</div>
+      <van-button type="primary" round size="small" :disabled="!canGoNext" @click="goNext" class="top-nav-action">下一步</van-button>
+    </div>
 
     <div class="stage-body">
       <div class="cards-grid">
@@ -15,19 +19,18 @@
           />
         </div>
       </div>
-
-      <van-button type="primary" block round size="large" @click="goNext">
-        我再去观察自己的植物朋友
-      </van-button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { showImagePreview } from 'vant';
+import { computed } from 'vue';
 import { useUserStore } from '../store/user';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.viewRecordCards));
 
 const cardSlots = [
   {
@@ -48,6 +51,7 @@ const cardSlots = [
 ];
 
 const goNext = () => {
+  if (!canGoNext.value) return;
   userStore.setStage('2');
 };
 
@@ -74,15 +78,32 @@ const previewCard = (url) => {
 .top-nav {
   min-height: 56px;
   padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
   border-bottom: 1px solid #dfe6f3;
   box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+}
+
+.top-nav-title {
   font-size: 17px;
   font-weight: 700;
   color: #1f2d3d;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
 }
 
 .stage-body {
@@ -132,7 +153,24 @@ const previewCard = (url) => {
   cursor: pointer;
 }
 
+:deep(.top-nav-action.van-button) {
+  height: 34px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+
   .cards-grid {
     grid-template-columns: 1fr;
     overflow: auto;

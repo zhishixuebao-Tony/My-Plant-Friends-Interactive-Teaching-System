@@ -1,6 +1,20 @@
 ﻿<template>
   <div class="stage-container">
-    <div class="top-nav">我的新发现</div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">我的新发现</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        :loading="isSubmitting"
+        :disabled="selectedChecks.length === 0 || !canGoNext"
+        @click="onFinalSubmit"
+        class="top-nav-action"
+      >
+        提交并下一步
+      </van-button>
+    </div>
 
     <div class="stage-body">
       <section class="observe-panel">
@@ -76,18 +90,6 @@
           </button>
         </div>
 
-        <van-button
-          type="primary"
-          block
-          round
-          size="large"
-          :loading="isSubmitting"
-          :disabled="selectedChecks.length === 0"
-          @click="onFinalSubmit"
-          class="submit-btn"
-        >
-          提交我的发现
-        </van-button>
       </section>
     </div>
   </div>
@@ -96,9 +98,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
-import { showDialog, showImagePreview, showToast } from 'vant';
+import { showImagePreview, showToast } from 'vant';
 import { useUserStore } from '../store/user';
 import { toDisplayImageUrl } from '../utils/imageProxy';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 
@@ -109,6 +112,7 @@ const prePlantPhotos = ref([]);
 const noNewFinding = ref(false);
 const hasUnseen = ref(false);
 const hasFeeling = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.recordCard));
 
 const groupDisabled = computed(() => noNewFinding.value);
 const noNewDisabled = computed(() => hasUnseen.value || hasFeeling.value);
@@ -181,6 +185,7 @@ const openPlantPreview = (startIndex) => {
 };
 
 const onFinalSubmit = async () => {
+  if (!canGoNext.value) return;
   if (selectedChecks.value.length === 0) {
     showToast('请至少勾选一项评价');
     return;
@@ -219,18 +224,35 @@ const onFinalSubmit = async () => {
 }
 
 .top-nav {
-  min-height: 48px;
+  min-height: 56px;
   padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
   border-bottom: 1px solid #dfe6f3;
   box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+  flex-shrink: 0;
+}
+
+.top-nav-title {
   font-size: 17px;
   font-weight: 700;
   color: #1f2d3d;
-  flex-shrink: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
 }
 
 .stage-body {
@@ -396,11 +418,24 @@ const onFinalSubmit = async () => {
   background: #eaf1ff;
 }
 
-.submit-btn {
-  margin-top: auto;
+:deep(.top-nav-action.van-button) {
+  height: 34px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+
   .stage-body {
     grid-template-columns: 1fr;
     overflow: auto;

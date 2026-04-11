@@ -9,6 +9,11 @@ from pydantic import BaseModel
 from app.db.mongodb import db_instance
 from app.services.oss_service import get_presigned_url
 from app.websockets.ws_manager import ws_manager
+from app.utils.role_rules import (
+    is_judge_student_id,
+    map_judge_to_source_student_id,
+    to_student_id_text,
+)
 
 router = APIRouter()
 
@@ -102,7 +107,11 @@ def _student_id_query(raw_student_id: str) -> dict:
 
 
 def _student_id_text(raw_student_id: str) -> str:
-    return str(raw_student_id).strip().zfill(2)
+    return to_student_id_text(raw_student_id)
+
+
+def _is_judge_submission(raw_student_id: str) -> bool:
+    return is_judge_student_id(_student_id_text(raw_student_id))
 
 
 def _normalize_text_items(items: List[str]) -> List[str]:
@@ -141,23 +150,25 @@ def _calc_stage5_stars(checks: List[str]) -> int:
 @router.post('/stage0/login')
 async def student_login(req: LoginReq):
     sid = _student_id_text(req.student_id)
-    query = _student_id_query(sid)
+    source_sid = map_judge_to_source_student_id(sid)
+    query = _student_id_query(source_sid)
 
     student = await db_instance.db.students.find_one(query)
     if not student:
-        raise HTTPException(status_code=404, detail=f'student {sid} not found')
+        raise HTTPException(status_code=404, detail=f'student {source_sid} not found')
 
-    await db_instance.db.students.update_one(
-        query,
-        {'$set': {'is_logged_in': True, 'last_active_time': datetime.now()}},
-    )
+    if not _is_judge_submission(sid):
+        await db_instance.db.students.update_one(
+            query,
+            {'$set': {'is_logged_in': True, 'last_active_time': datetime.now()}},
+        )
 
-    await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
+        await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
 
     return {
         'status': 'success',
         'data': {
-            'student_id': _student_id_text(str(student.get('student_id', sid))),
+            'student_id': sid,
             'student_name': student.get('student_name', ''),
             'pre_record_card': student.get('pre_record_card', ''),
             'pre_plant_1': student.get('pre_plant_1', ''),
@@ -169,6 +180,9 @@ async def student_login(req: LoginReq):
 
 @router.post('/stage/sync')
 async def sync_student_stage(req: StageSyncReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success'}
+
     query = _student_id_query(req.student_id)
     stage_text = str(req.current_stage).strip()
     result = await db_instance.db.students.update_one(
@@ -189,6 +203,9 @@ async def sync_student_stage(req: StageSyncReq):
 
 @router.post('/stage1/sensory')
 async def submit_stage1(req: SensoryReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success'}
+
     stage1_stars = 1 if len(_normalize_sensory_checks(req.checks)) > 0 else 0
     await db_instance.db.students.update_one(
         _student_id_query(req.student_id),
@@ -207,6 +224,9 @@ async def submit_stage1(req: SensoryReq):
 
 @router.post('/stage2/record-card')
 async def submit_stage2(req: RecordCardReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success'}
+
     stage3_stars = _calc_stage3_stars(req.checks)
     student = await db_instance.db.students.find_one(_student_id_query(req.student_id), {'_id': 0})
     stage1_stars = int((student or {}).get('stage1_stars', 0) or 0)
@@ -231,6 +251,9 @@ async def submit_stage2(req: RecordCardReq):
 
 @router.post('/stage3/save-draft')
 async def save_draft_only(req: DraftSubmitReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success', 'message': 'draft saved'}
+
     await db_instance.db.students.update_one(
         _student_id_query(req.student_id),
         {
@@ -247,6 +270,9 @@ async def save_draft_only(req: DraftSubmitReq):
 
 @router.post('/stage4/complete-resources')
 async def complete_stage4(req: ResourceCompleteReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success', 'message': 'resources completed'}
+
     await db_instance.db.students.update_one(
         _student_id_query(req.student_id),
         {
@@ -263,6 +289,9 @@ async def complete_stage4(req: ResourceCompleteReq):
 
 @router.post('/track-resource-click/{student_id}/{res_id}')
 async def track_resource_click(student_id: str, res_id: str):
+    if _is_judge_submission(student_id):
+        return {'status': 'recorded'}
+
     await db_instance.db.students.update_one(
         _student_id_query(student_id),
         {
@@ -276,6 +305,9 @@ async def track_resource_click(student_id: str, res_id: str):
 
 @router.post('/stage5/final')
 async def submit_stage5(req: FinalSubmitReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success', 'message': 'final submitted'}
+
     student = await db_instance.db.students.find_one(_student_id_query(req.student_id), {'_id': 0})
     stage1_stars = int((student or {}).get('stage1_stars', 0) or 0)
     stage3_stars = int((student or {}).get('stage3_stars', 0) or 0)
@@ -299,6 +331,9 @@ async def submit_stage5(req: FinalSubmitReq):
 
 @router.post('/stage5/submit')
 async def submit_stage5_with_checks(req: Stage5SubmitReq):
+    if _is_judge_submission(req.student_id):
+        return {'status': 'success', 'message': 'stage5 submitted', 'total_stars': 0}
+
     stage5_checks = _normalize_text_items(req.stage5_checks)
     stage5_stars = _calc_stage5_stars(stage5_checks)
     student = await db_instance.db.students.find_one(_student_id_query(req.student_id), {'_id': 0})
@@ -325,12 +360,13 @@ async def submit_stage5_with_checks(req: Stage5SubmitReq):
 
 @router.get('/student/info/{student_id}')
 async def get_student_info(student_id: str):
-    student = await db_instance.db.students.find_one(_student_id_query(student_id))
+    source_sid = map_judge_to_source_student_id(student_id)
+    student = await db_instance.db.students.find_one(_student_id_query(source_sid))
     if not student:
         raise HTTPException(status_code=404, detail='student not found')
 
     return {
-        'student_id': _student_id_text(str(student.get('student_id', student_id))),
+        'student_id': _student_id_text(student_id),
         'student_name': student.get('student_name', ''),
         'pre_record_card': student.get('pre_record_card', ''),
         'pre_plant_1': student.get('pre_plant_1', ''),

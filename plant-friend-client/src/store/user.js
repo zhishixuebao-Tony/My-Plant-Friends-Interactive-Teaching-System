@@ -1,6 +1,7 @@
 ﻿import { defineStore } from 'pinia';
 import axios from 'axios';
 import { toDisplayImageUrl } from '../utils/imageProxy';
+import { DEFAULT_NEXT_BUTTON_CONTROL_STATE } from '../constants/nextButtonControls';
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -27,6 +28,10 @@ export const useUserStore = defineStore('user', {
       // 存储用户选择的信息
       sensorySelections: initialState?.sensorySelections || [],
       dimensionSelections: initialState?.dimensionSelections || [],
+      nextButtonControls: {
+        ...DEFAULT_NEXT_BUTTON_CONTROL_STATE,
+        ...(initialState?.nextButtonControls || {}),
+      },
     };
   },
 
@@ -118,6 +123,7 @@ export const useUserStore = defineStore('user', {
         finalSubmitted: this.finalSubmitted,
         sensorySelections: this.sensorySelections,
         dimensionSelections: this.dimensionSelections,
+        nextButtonControls: this.nextButtonControls,
       };
 
       localStorage.setItem('plant-friend-user-state', JSON.stringify(stateToSave));
@@ -139,6 +145,27 @@ export const useUserStore = defineStore('user', {
       this.saveToStorage();
       this.syncCurrentStage('5');
     },
+
+    applyNextButtonControlState(controls) {
+      this.nextButtonControls = {
+        ...DEFAULT_NEXT_BUTTON_CONTROL_STATE,
+        ...(controls || {}),
+      };
+      this.saveToStorage();
+    },
+
+    updateOneNextButtonControl(key, enabled) {
+      if (!key) return;
+      this.nextButtonControls = {
+        ...this.nextButtonControls,
+        [key]: Boolean(enabled),
+      };
+      this.saveToStorage();
+    },
+
+    isNextButtonEnabled(key) {
+      if (!key) return true;
+      return Boolean(this.nextButtonControls?.[key]);
+    },
   },
 });
-
