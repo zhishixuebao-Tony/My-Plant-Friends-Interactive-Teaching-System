@@ -78,14 +78,6 @@ export const useUserStore = defineStore('user', {
     },
 
     async reset() {
-      if (this.studentId) {
-        try {
-          await axios.post('/api/student/stage0/logout', { student_id: this.studentId });
-        } catch (_) {
-          // Ignore logout network errors.
-        }
-      }
-
       this.studentId = '';
       this.studentName = '';
       this.prePlantPhotos = [];

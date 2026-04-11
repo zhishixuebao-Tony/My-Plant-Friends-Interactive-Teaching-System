@@ -19,6 +19,7 @@ const STUDENT_STATIC_IMAGE_URLS = [
   '/ViewRecordCards/RecordCard1.png',
   '/ViewRecordCards/RecordCard2.png',
   '/ViewRecordCards/RecordCard3.png',
+  '/final-draft/three-trees.jpg',
 ];
 
 const toSafeUrl = (url) => {
