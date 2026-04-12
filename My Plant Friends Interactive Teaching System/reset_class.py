@@ -101,21 +101,7 @@ async def reset_class_data() -> None:
         "last_active_time": None,
     }
 
-    # Remove legacy fields no longer used by offline mode.
-    unset_fields = {
-        "stage_total_stars": "",
-        "finalStars": "",
-        "totalStars": "",
-        "final_stars": "",
-        "pre_photo_url": "",
-        "record_card_img": "",
-        "draft_img": "",
-        "final_img": "",
-        "has_completed_ai": "",
-        "ai_feedback_text": "",
-    }
-
-    result = await db.students.update_many({}, {"$set": set_fields, "$unset": unset_fields})
+    result = await db.students.update_many({}, {"$set": set_fields})
 
     print(f"Done. Updated students: {result.modified_count}")
     print("Kept: student_id/student_name and pre_* media fields.")

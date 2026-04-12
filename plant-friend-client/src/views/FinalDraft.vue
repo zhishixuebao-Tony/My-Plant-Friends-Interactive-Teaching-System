@@ -101,7 +101,7 @@
           <div class="cert-title">荣 誉 奖 状</div>
           <div class="cert-body">
             <p>亲爱的 <span class="strong-name">{{ displayName }}</span> 同学：</p>
-            <p>在《我的植物朋友》探索中，你共获得了 <span class="strong-num">{{ totalStars }}</span> 颗星！</p>
+            <p>在《我的植物朋友》成长中，你共获得了 <span class="strong-num">{{ totalStars }}</span> 颗星！</p>
             <p>根据你的表现，特授予你以下称号：</p>
             <p class="badge-title-row">
               <span class="badge-star" aria-hidden="true">★</span>
@@ -110,7 +110,7 @@
             </p>
           </div>
           <div class="cert-footer">
-            <span>语文互动课堂</span>
+            <span>重庆市人民小学</span>
             <span>{{ todayText }}</span>
           </div>
         </div>

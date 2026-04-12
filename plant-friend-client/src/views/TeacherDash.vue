@@ -22,7 +22,10 @@
         </div>
       </div>
 
-      <div class="section-title tables-title">实时统计与可视化</div>
+      <div class="section-title tables-title stats-title-row">
+        <span>实时统计与可视化</span>
+        <van-button size="small" type="primary" plain @click="handleManualRefresh">刷新</van-button>
+      </div>
       <div class="analysis-grid">
         <div class="data-table-box">
           <div class="table-head">观察方法统计</div>
@@ -355,6 +358,11 @@ const fetchDashboardData = async () => {
   }
 };
 
+const handleManualRefresh = async () => {
+  await fetchDashboardData();
+  showToast('统计已刷新');
+};
+
 const getWsUrl = () => {
   const base = axios.defaults.baseURL || window.location.origin;
   if (base.startsWith('https')) return base.replace(/^https/, 'wss') + '/ws/stats';
@@ -603,6 +611,7 @@ onUnmounted(() => {
 
 .section-title { font-size: 20px; font-weight: 700; color: #333; margin-bottom: 20px; border-left: 5px solid #07c160; padding-left: 12px; }
 .tables-title { margin-top: 36px; border-left-color: #1989fa; }
+.stats-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .highlight { color: #07c160; font-size: 26px; }
 
 /* 学生卡片 */

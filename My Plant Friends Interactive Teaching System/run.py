@@ -5,4 +5,4 @@ if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 
 
     # --- 46人实战/压测模式 ---
-    #uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
+    #uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False, workers=1)

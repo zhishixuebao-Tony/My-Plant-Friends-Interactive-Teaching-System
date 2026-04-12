@@ -5,7 +5,8 @@
       <OpsControl v-else-if="isOpsMode" />
 
       <template v-else>
-  
+        <!-- 顶部导航栏，测试开启，使用关闭 -->
+        <!-- 
         <div v-if="showStudentStageNav" class="student-stage-nav">
           <button
             v-for="item in stageNavItems"
@@ -18,7 +19,7 @@
             {{ item.label }}
           </button>
         </div>
-
+        -->
 
         <Login v-if="userStore.currentStage === '0'" />
         <Welcome v-else-if="userStore.currentStage === 'welcome'" />
