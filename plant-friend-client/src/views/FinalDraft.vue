@@ -86,14 +86,28 @@
     </div>
 
     <div v-else class="certificate-wrap">
+      <span class="cert-deco leaf leaf-a" aria-hidden="true"></span>
+      <span class="cert-deco leaf leaf-b" aria-hidden="true"></span>
+      <span class="cert-deco leaf leaf-c" aria-hidden="true"></span>
+      <span class="cert-deco flower flower-a" aria-hidden="true"></span>
+      <span class="cert-deco flower flower-b" aria-hidden="true"></span>
+      <span class="cert-deco ladybug" aria-hidden="true"></span>
       <div class="certificate">
         <div class="cert-inner">
+          <span class="vine-corner vine-tl" aria-hidden="true"></span>
+          <span class="vine-corner vine-tr" aria-hidden="true"></span>
+          <span class="vine-corner vine-bl" aria-hidden="true"></span>
+          <span class="vine-corner vine-br" aria-hidden="true"></span>
           <div class="cert-title">荣 誉 奖 状</div>
           <div class="cert-body">
             <p>亲爱的 <span class="strong-name">{{ displayName }}</span> 同学：</p>
             <p>在《我的植物朋友》探索中，你共获得了 <span class="strong-num">{{ totalStars }}</span> 颗星！</p>
             <p>根据你的表现，特授予你以下称号：</p>
-            <p class="badge-title">{{ awardTitle }}</p>
+            <p class="badge-title-row">
+              <span class="badge-star" aria-hidden="true">★</span>
+              <span class="badge-title">{{ awardTitle }}</span>
+              <span class="badge-star" aria-hidden="true">★</span>
+            </p>
           </div>
           <div class="cert-footer">
             <span>语文互动课堂</span>
@@ -150,9 +164,9 @@ const displayName = computed(() => userStore.studentName || '小朋友');
 const todayText = new Date().toLocaleDateString();
 
 const awardTitle = computed(() => {
-  if (totalStars.value >= 5) return '🌟 小小植物学家 🌟';
-  if (totalStars.value >= 3) return '🌱 优秀观察员 🌱';
-  return '🍃 植物好朋友 🍃';
+  if (totalStars.value >= 5) return '小小植物学家';
+  if (totalStars.value >= 3) return '优秀观察员';
+  return '植物好朋友';
 });
 
 const launchConfetti = () => {
@@ -517,52 +531,123 @@ const submitStage5 = async () => {
   justify-content: center;
   gap: 12px;
   padding: 20px;
-  background: radial-gradient(circle at 50% 20%, #fff6d8 0%, #f8eecb 45%, #f2e2b4 100%);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(195, 231, 195, 0.45) 0%, rgba(195, 231, 195, 0) 36%),
+    radial-gradient(circle at 88% 24%, rgba(255, 236, 189, 0.42) 0%, rgba(255, 236, 189, 0) 34%),
+    radial-gradient(circle at 48% 76%, rgba(217, 239, 212, 0.42) 0%, rgba(217, 239, 212, 0) 32%),
+    linear-gradient(180deg, #f5faef 0%, #eff7ea 52%, #f6f1dc 100%);
+}
+
+.certificate-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  pointer-events: none;
+  opacity: 0.24;
+  background-image:
+    radial-gradient(ellipse at 20% 25%, rgba(103, 156, 98, 0.28) 0 18%, transparent 20%),
+    radial-gradient(ellipse at 73% 54%, rgba(129, 179, 121, 0.24) 0 16%, transparent 18%),
+    radial-gradient(ellipse at 44% 74%, rgba(153, 199, 143, 0.2) 0 14%, transparent 16%);
+  filter: blur(1px);
 }
 
 .certificate {
   width: min(92vw, 860px);
-  background: #fff6de;
-  border-radius: 20px;
-  padding: 14px;
-  border: 5px solid #d4a93b;
-  box-shadow: 0 14px 30px rgba(127, 88, 15, 0.2);
+  position: relative;
+  z-index: 2;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 241, 0.82) 0%, rgba(255, 247, 225, 0.78) 100%);
+  border-radius: 24px;
+  padding: 16px;
+  border: 1px solid rgba(230, 203, 126, 0.75);
+  box-shadow:
+    0 18px 36px rgba(72, 100, 52, 0.2),
+    0 6px 12px rgba(72, 100, 52, 0.12);
+  backdrop-filter: blur(4px);
 }
 
 .cert-inner {
-  border: 3px solid #e0bf69;
-  border-radius: 14px;
-  background: #fff9eb;
-  padding: 24px;
+  position: relative;
+  border: 4px double #d7b351;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      rgba(255, 251, 238, 0.95) 0px,
+      rgba(255, 251, 238, 0.95) 6px,
+      rgba(255, 247, 229, 0.95) 6px,
+      rgba(255, 247, 229, 0.95) 12px
+    );
+  padding: 30px 26px 24px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.85);
 }
 
 .cert-title {
   text-align: center;
-  font-size: 56px;
+  font-size: 58px;
   font-weight: 900;
-  letter-spacing: 10px;
-  color: #c4472f;
-  margin-bottom: 18px;
+  letter-spacing: 11px;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, #1f8a49 0%, #1f6e41 45%, #155535 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 1px 0 #f6fff6,
+    0 3px 8px rgba(45, 108, 58, 0.25);
+  -webkit-text-stroke: 1px rgba(19, 74, 40, 0.26);
 }
 
 .cert-body {
-  font-size: 26px;
-  color: #5a4317;
-  line-height: 1.8;
+  font-size: 27px;
+  color: #4d3d19;
+  line-height: 1.82;
 }
 
 .strong-name,
 .strong-num {
   font-weight: 900;
-  color: #1f5d35;
+  color: #1d6f3f;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(233, 252, 231, 0.95) 0%, rgba(219, 246, 214, 0.95) 100%);
+}
+
+.badge-title-row {
+  margin-top: 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .badge-title {
-  margin-top: 12px;
-  text-align: center;
   font-size: 40px;
   font-weight: 900;
-  color: #1f5d35;
+  color: #1f7541;
+  letter-spacing: 1px;
+  text-shadow:
+    0 1px 0 #f6fff6,
+    0 4px 10px rgba(43, 105, 55, 0.24);
+}
+
+.badge-star {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff7cb;
+  background: radial-gradient(circle at 34% 32%, #ffe98a 0%, #ffcf4e 50%, #e3a825 100%);
+  box-shadow:
+    0 0 12px rgba(255, 207, 78, 0.72),
+    0 4px 10px rgba(212, 144, 29, 0.35);
+  border: 1px solid rgba(255, 245, 198, 0.7);
 }
 
 .cert-footer {
@@ -570,7 +655,88 @@ const submitStage5 = async () => {
   display: flex;
   justify-content: space-between;
   font-size: 18px;
-  color: #8a6a2b;
+  color: #7d6632;
+}
+
+.cert-deco {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.leaf {
+  width: 34px;
+  height: 22px;
+  background: linear-gradient(140deg, #7ec783 0%, #4ea86f 100%);
+  border-radius: 22px 22px 22px 4px;
+  box-shadow: 0 6px 10px rgba(55, 122, 68, 0.18);
+}
+
+.leaf-a { top: 76px; left: 78px; transform: rotate(-24deg); }
+.leaf-b { right: 70px; top: 96px; transform: rotate(18deg) scale(1.15); }
+.leaf-c { right: 120px; bottom: 86px; transform: rotate(-34deg); }
+
+.flower {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff5bd 0%, #ffd97c 48%, #f6ba59 100%);
+  box-shadow: 0 0 0 6px rgba(255, 244, 204, 0.55);
+}
+
+.flower-a { left: 124px; bottom: 110px; }
+.flower-b { right: 152px; top: 150px; }
+
+.ladybug {
+  width: 16px;
+  height: 16px;
+  right: 92px;
+  bottom: 132px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #ff6e61 0%, #dc3f34 70%);
+  box-shadow: 0 3px 8px rgba(128, 30, 30, 0.28);
+}
+
+.ladybug::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 1px;
+  width: 2px;
+  height: 14px;
+  background: #3a2d2d;
+}
+
+.ladybug::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 36% 42%, #222 0 1.4px, transparent 1.6px),
+    radial-gradient(circle at 65% 30%, #222 0 1.3px, transparent 1.5px),
+    radial-gradient(circle at 62% 64%, #222 0 1.4px, transparent 1.6px);
+}
+
+.vine-corner {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+  border: 2px solid rgba(82, 138, 82, 0.55);
+}
+
+.vine-tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-radius: 16px 0 0 0; }
+.vine-tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-radius: 0 16px 0 0; }
+.vine-bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-radius: 0 0 0 16px; }
+.vine-br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-radius: 0 0 16px 0; }
+
+.vine-corner::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 6px;
+  background: linear-gradient(140deg, #7fbf75 0%, #59a562 100%);
+  border-radius: 8px 8px 8px 0;
 }
 
 @media (max-width: 1200px) {
@@ -581,9 +747,10 @@ const submitStage5 = async () => {
   .tree-a { left: 11%; width: 172px; }
   .tree-b { left: 39%; width: 172px; }
   .tree-c { right: 20%; width: 110px; top: 19%; }
-  .cert-title { font-size: 44px; }
+  .cert-title { font-size: 46px; letter-spacing: 8px; }
   .cert-body { font-size: 22px; }
-  .badge-title { font-size: 32px; }
+  .badge-title { font-size: 33px; }
+  .badge-star { width: 36px; height: 36px; font-size: 20px; }
 }
 
 @media (max-width: 900px) {
@@ -611,5 +778,15 @@ const submitStage5 = async () => {
   .tree-a { left: 7%; bottom: 23%; width: 132px; }
   .tree-b { left: 34%; bottom: 23%; width: 132px; }
   .tree-c { right: 10%; top: 17%; width: 90px; }
+
+  .certificate-wrap { padding: 16px; }
+  .certificate { width: min(96vw, 860px); padding: 12px; }
+  .cert-inner { padding: 22px 18px 18px; }
+  .cert-title { font-size: 36px; letter-spacing: 6px; }
+  .cert-body { font-size: 18px; }
+  .badge-title { font-size: 28px; }
+  .badge-star { width: 30px; height: 30px; font-size: 16px; }
+  .cert-footer { font-size: 14px; }
+  .leaf, .flower, .ladybug { transform: scale(0.85); }
 }
 </style>

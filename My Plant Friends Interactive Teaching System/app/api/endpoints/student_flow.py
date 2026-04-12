@@ -2,12 +2,9 @@ from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
-import httpx
 from pydantic import BaseModel
 
 from app.db.mongodb import db_instance
-from app.services.oss_service import get_presigned_url
 from app.websockets.ws_manager import ws_manager
 from app.utils.role_rules import (
     is_judge_student_id,
@@ -34,17 +31,6 @@ class SensoryReq(BaseModel):
 
 class ResourceCompleteReq(BaseModel):
     student_id: str
-
-
-class OssSignReq(BaseModel):
-    student_id: str
-    module_name: str
-    file_extension: str
-
-
-class DraftSubmitReq(BaseModel):
-    student_id: str
-    img_url: str
 
 
 class FinalSubmitReq(BaseModel):
@@ -276,7 +262,6 @@ async def submit_stage2(req: RecordCardReq):
                 'dimension_evaluations': req.checks,
                 'stage3_stars': stage3_stars,
                 'total_stars': total_stars,
-                'record_card_img': '',
                 'current_stage': '3',
                 'last_active_time': datetime.now(),
             }
@@ -284,25 +269,6 @@ async def submit_stage2(req: RecordCardReq):
     )
     await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
     return {'status': 'success'}
-
-
-@router.post('/stage3/save-draft')
-async def save_draft_only(req: DraftSubmitReq):
-    if _is_judge_submission(req.student_id):
-        return {'status': 'success', 'message': 'draft saved'}
-
-    await db_instance.db.students.update_one(
-        _student_id_query(req.student_id),
-        {
-            '$set': {
-                'draft_img': req.img_url,
-                'current_stage': '3',
-                'last_active_time': datetime.now(),
-            }
-        },
-    )
-    await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
-    return {'status': 'success', 'message': 'draft saved'}
 
 
 @router.post('/stage4/complete-resources')
@@ -412,31 +378,3 @@ async def get_student_info(student_id: str):
     }
 
 
-@router.post('/get-oss-ticket')
-async def generate_oss_upload_ticket(req: OssSignReq):
-    try:
-        urls = get_presigned_url(req.student_id, req.file_extension, req.module_name)
-        return {'status': 'success', 'data': urls}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'failed to sign oss url: {str(e)}')
-
-
-@router.get('/proxy-image')
-async def proxy_image(url: str):
-    safe_url = str(url or '').strip()
-    if not safe_url.startswith(('http://', 'https://')):
-        raise HTTPException(status_code=400, detail='invalid url')
-    if 'aliyuncs.com' not in safe_url:
-        raise HTTPException(status_code=400, detail='unsupported host')
-
-    try:
-        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-            resp = await client.get(safe_url)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f'proxy fetch failed: {str(e)}')
-
-    if resp.status_code >= 400:
-        raise HTTPException(status_code=resp.status_code, detail='upstream image error')
-
-    content_type = resp.headers.get('content-type', 'image/jpeg')
-    return Response(content=resp.content, media_type=content_type)

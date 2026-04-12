@@ -107,7 +107,6 @@ async def get_dashboard_stats():
         'table2_dimension': dim_stats,
         'table3_resource': resource_stats,
         'table4_writing': writing_stats,
-        'table5_ai_count': len([s for s in real_students if s.get('has_completed_ai')]),
         'resource_completed_count': len([s for s in real_students if s.get('has_viewed_resources') is True]),
         'students_list': real_students,
     }
@@ -122,16 +121,12 @@ async def get_one_student_detail(student_id: str):
     return {
         'student_id': student.get('student_id'),
         'student_name': student.get('student_name'),
-        'has_completed_ai': student.get('has_completed_ai', False),
         'has_viewed_resources': student.get('has_viewed_resources', False),
-        'ai_feedback_text': student.get('ai_feedback_text', ''),
+        'has_claimed_certificate': student.get('has_claimed_certificate', False),
         'pre_record_card': student.get('pre_record_card', ''),
         'pre_plant_1': student.get('pre_plant_1', ''),
         'pre_plant_2': student.get('pre_plant_2', ''),
         'pre_plant_3': student.get('pre_plant_3', ''),
-        'record_card_img': student.get('record_card_img', ''),
-        'draft_img': student.get('draft_img', ''),
-        'final_img': student.get('final_img', ''),
     }
 
 

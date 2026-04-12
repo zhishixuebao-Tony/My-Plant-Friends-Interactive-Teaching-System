@@ -34,9 +34,6 @@ const collectStudentDynamicUrls = (studentData = {}) => {
     studentData.pre_plant_1,
     studentData.pre_plant_2,
     studentData.pre_plant_3,
-    studentData.record_card_img,
-    studentData.draft_img,
-    studentData.final_img,
   ]
     .map(toSafeUrl)
     .filter(Boolean);

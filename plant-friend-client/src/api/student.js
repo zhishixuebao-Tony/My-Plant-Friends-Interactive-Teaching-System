@@ -13,22 +13,6 @@ export const submitSensoryApi = (studentId, checks) => {
   });
 };
 
-export const uploadImageFlow = async (studentId, moduleName, file) => {
-  const ticketRes = await axios.post('/api/student/get-oss-ticket', {
-    student_id: studentId,
-    module_name: moduleName,
-    file_extension: 'jpg',
-  });
-
-  const { upload_url, access_url } = ticketRes.data.data;
-
-  await axios.put(upload_url, file, {
-    headers: { 'Content-Type': 'image/jpeg' },
-  });
-
-  return access_url;
-};
-
 export const completeResourceApi = (studentId) => {
   return axios.post('/api/student/stage4/complete-resources', {
     student_id: studentId,

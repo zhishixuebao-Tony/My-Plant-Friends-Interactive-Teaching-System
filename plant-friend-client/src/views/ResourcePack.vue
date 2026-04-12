@@ -45,7 +45,7 @@
             >
               <div class="help-item-content">
                 <div class="help-item-inner">
-                  <div class="help-item-text">{{ pack.prompt }}</div>
+                  <div class="help-item-text">{{ formatPrompt(pack.prompt) }}</div>
                   <div class="help-item-tip">点击查看</div>
                 </div>
               </div>
@@ -83,6 +83,12 @@ const onPhotoPreview = (startIndex) => {
   axios.post(`/api/student/track-resource-click/${userStore.studentId}/我的植物朋友照片`).catch((error) => {
     console.warn('上报植物照片点击失败:', error);
   });
+};
+
+const formatPrompt = (text) => {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
+  return raw.replace('，', '，\n');
 };
 
 const resourcePacks = ref([
@@ -158,13 +164,16 @@ const submitStage4 = async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #f7f8fa;
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  background:
+    radial-gradient(1200px 420px at 50% -120px, #eaf2ff 0%, rgba(234, 242, 255, 0) 75%),
+    linear-gradient(180deg, #f4f7fc 0%, #eef3fb 100%);
   overflow: hidden;
 }
 
 .resource-layout {
   flex: 1;
-  padding: 16px;
+  padding: 20px 16px;
   box-sizing: border-box;
   display: flex;
   align-items: stretch;
@@ -179,29 +188,32 @@ const submitStage4 = async () => {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .pack-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  border: 1px solid #e8edf6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  gap: 16px;
+  border: 1px solid #e3ebf7;
+  box-shadow:
+    0 8px 24px rgba(44, 86, 153, 0.08),
+    0 2px 8px rgba(44, 86, 153, 0.05);
 }
 
 .plant-card {
   flex: 0 0 auto;
-  padding: 18px 18px 20px;
+  padding: 20px;
 }
 
 .pack-card-title {
   font-size: 18px;
   font-weight: 700;
-  color: #1f2d3d;
+  color: #1f2f4a;
+  letter-spacing: 0.2px;
 }
 
 .plant-photo-strip {
@@ -220,13 +232,32 @@ const submitStage4 = async () => {
   cursor: pointer;
   width: min(31%, 280px);
   flex: 0 1 min(31%, 280px);
+  border-radius: 14px;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.plant-photo-btn:hover {
+  transform: translateY(-3px);
+  filter: saturate(1.03);
+}
+
+.plant-photo-btn:active {
+  transform: translateY(-1px) scale(0.99);
 }
 
 .plant-photo-image {
   width: 100%;
   height: clamp(180px, 24vh, 290px);
-  border: 1px solid #dbe4f3;
-  background: #f8fbff;
+  border: 1px solid #d5e1f3;
+  background: #f7faff;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(45, 87, 155, 0.12);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.plant-photo-btn:hover .plant-photo-image {
+  border-color: #bdd0ee;
+  box-shadow: 0 10px 26px rgba(45, 87, 155, 0.2);
 }
 
 .help-section {
@@ -234,13 +265,13 @@ const submitStage4 = async () => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .help-title {
   font-size: 20px;
   font-weight: 800;
-  color: #1f2d3d;
+  color: #203452;
   text-align: center;
 }
 
@@ -253,34 +284,39 @@ const submitStage4 = async () => {
 }
 
 .help-item {
-  border: 0;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #e9f5ff 0%, #dcecff 100%);
+  border: 1px solid #d8e6fa;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #edf5ff 0%, #e3efff 100%);
   text-align: left;
-  padding: 8px;
+  padding: 10px;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(37, 86, 143, 0.2);
+  box-shadow: 0 8px 18px rgba(56, 106, 176, 0.13);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
 }
 
 .help-item:hover {
-  box-shadow: 0 12px 22px rgba(37, 86, 143, 0.24);
+  transform: translateY(-2px);
+  border-color: #bdd4f5;
+  background: linear-gradient(180deg, #e6f1ff 0%, #d9e9ff 100%);
+  box-shadow: 0 12px 24px rgba(56, 106, 176, 0.2);
 }
 
 .help-item:active {
-  transform: scale(0.98);
+  transform: translateY(-1px) scale(0.99);
 }
 
 .help-item-text {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.45;
   font-weight: 700;
-  color: #23453a;
+  color: #1f3657;
   text-align: center;
-  font-family: "STXingkai", "KaiTi", "STKaiti", "Microsoft YaHei", sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  white-space: pre-line;
+  min-height: calc(1.45em * 2);
 }
 
 .help-item-content {
@@ -292,22 +328,22 @@ const submitStage4 = async () => {
 .help-item-inner {
   width: calc(100% - 14px);
   margin: 0 auto;
-  border: 0;
-  border-radius: 11px;
-  background: linear-gradient(180deg, #ffffff 0%, #f4fbec 100%);
-  padding: 10px 10px 9px;
+  border: 1px solid #e3ecf9;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+  padding: 12px 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  box-shadow: 0 6px 12px rgba(76, 135, 96, 0.2);
+  box-shadow: 0 4px 10px rgba(65, 111, 177, 0.12);
 }
 
 .help-item-tip {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
-  color: #2d8a4e;
+  color: #408de6;
   letter-spacing: 0.5px;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
@@ -319,16 +355,16 @@ const submitStage4 = async () => {
   grid-template-columns: 132px 1fr 132px;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  border-bottom: 1px solid #dfe6f3;
-  box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
+  border-bottom: 1px solid #d8e5f8;
+  box-shadow: 0 4px 14px rgba(41, 88, 156, 0.09);
   flex-shrink: 0;
 }
 
 .top-nav-title {
   font-size: 17px;
   font-weight: 700;
-  color: #1f2d3d;
+  color: #254064;
   letter-spacing: 0.2px;
   text-align: center;
   white-space: nowrap;
@@ -346,10 +382,21 @@ const submitStage4 = async () => {
 }
 
 :deep(.top-nav-action.van-button) {
-  height: 34px;
-  padding-inline: 10px;
+  height: 36px;
+  padding-inline: 14px;
   font-size: 13px;
   font-weight: 700;
+  border: none;
+  background: linear-gradient(90deg, #4d96f7 0%, #409eff 55%, #3d86ec 100%);
+  box-shadow: 0 6px 14px rgba(64, 158, 255, 0.35);
+}
+
+:deep(.top-nav-action.van-button:hover) {
+  filter: brightness(1.02);
+}
+
+:deep(.top-nav-action.van-button:active) {
+  transform: translateY(1px);
 }
 
 @media (max-width: 900px) {
@@ -364,7 +411,7 @@ const submitStage4 = async () => {
   }
 
   .pack-card {
-    padding: 12px;
+    padding: 14px;
   }
 
   .help-title {
@@ -382,6 +429,7 @@ const submitStage4 = async () => {
   .plant-photo-image {
     height: clamp(150px, 20vh, 230px);
   }
+
 }
 
 @media (max-width: 600px) {

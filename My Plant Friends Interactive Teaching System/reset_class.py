@@ -1,89 +1,128 @@
-﻿import asyncio
+import asyncio
+from pathlib import Path
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# MongoDB 配置
+# MongoDB config
 MONGO_DETAILS = "mongodb://localhost:27017"
 DB_NAME = "composition_db"
 
+# Local media directory (offline mode)
+LOCAL_MEDIA_DIR = Path(__file__).resolve().parent / "local_media"
+PROCESS_MEDIA_STEMS = {"record_card", "draft", "final"}
 
-async def reset_class_data():
+
+def clear_process_media_files() -> int:
     """
-    一键重置课堂过程数据（不删除学生基础资料）。
+    Delete only classroom process images in local_media:
+    - delete: record_card.*, draft.*, final.*
+    - keep:   pre_record_card.*, pre_plant_1/2/3.*
+    """
+    if not LOCAL_MEDIA_DIR.exists():
+        return 0
 
-    会保留：
+    removed = 0
+    for student_dir in LOCAL_MEDIA_DIR.iterdir():
+        if not student_dir.is_dir():
+            continue
+
+        for file_path in student_dir.iterdir():
+            if not file_path.is_file():
+                continue
+
+            if file_path.stem.lower() in PROCESS_MEDIA_STEMS:
+                try:
+                    file_path.unlink()
+                    removed += 1
+                except Exception:
+                    # Keep reset robust even when a file is locked.
+                    pass
+
+    return removed
+
+
+async def reset_class_data() -> None:
+    """
+    Reset classroom process data for offline/LAN mode.
+
+    Keep:
     - student_id, student_name
-    - pre_record_card, pre_plant_1, pre_plant_2, pre_plant_3（课前素材）
-    - admin_config（教师密码配置）
+    - pre_record_card, pre_plant_1, pre_plant_2, pre_plant_3
+    - admin_config
 
-    会重置（保留字段不动）：
-    - 登录状态与进度
-    - 环节 1（感官观察）的勾选与星数
-    - 环节 3（记录卡）的勾选与星数
-    - 环节 5（试写环节）的勾选与星数
-    - 资源包点击统计与完成状态
-    - 证书领取状态与总星数
-    - 课堂过程状态与统计字段（AI 兼容字段）
-    - 旧的拍照上传产物字段会直接删除
+    Reset:
+    - login state and stage
+    - stage1/stage3/stage5 selections and stars
+    - resource click stats and completion flags
+    - total stars and certificate flags
+    - remove legacy process image URL fields (record_card_img/draft_img/final_img)
+
+    Optional:
+    - clear process image files under local_media
     """
-    print("正在连接数据库...")
+    print("Connecting database...")
     client = AsyncIOMotorClient(MONGO_DETAILS)
     db = client[DB_NAME]
 
     confirm = input(
-        "危险操作：将重置全班课堂过程数据（保留学号姓名与课前素材）。\n"
-        "确认执行请输入 'yes'："
+        "Danger: this will reset class process data (keep student basic info and pre-media).\n"
+        "Type 'yes' to continue: "
     )
     if confirm.strip().lower() != "yes":
-        print("已取消重置。")
+        print("Cancelled.")
         client.close()
         return
 
-    print("正在重置 students 集合中的课堂数据...")
+    clear_media = (
+        input(
+            "Also clear local_media process images (record_card/draft/final)?\n"
+            "pre_* files will be kept. Type 'yes' to continue: "
+        )
+        .strip()
+        .lower()
+        == "yes"
+    )
+
+    print("Resetting students process fields...")
 
     set_fields = {
-        # 0. 登录与进度
         "is_logged_in": False,
         "current_stage": "0",
-
-        # 1. 环节 1：感官观察（观察方法统计）
         "sensory_evaluations": [],
         "stage1_stars": 0,
-
-        # 2. 环节 3：记录卡（新发现统计）
         "dimension_evaluations": [],
         "stage3_stars": 0,
-
-        # 3. 资源包与相关统计（资源点击统计）
         "has_viewed_resources": False,
         "resource_click_stats": {},
-
-        # 4. 环节 5：试写与证书（写作目标达成统计）
         "stage5_checks": [],
         "stage5_stars": 0,
         "total_stars": 0,
         "has_claimed_certificate": False,
-
-        # 5. 兼容历史字段（如仍存在则一起清空）
-        "has_completed_ai": False,
-        "ai_feedback_text": "",
         "last_active_time": None,
     }
 
-    # 历史残留字段与已停用字段：直接删除
+    # Remove legacy fields no longer used by offline mode.
     unset_fields = {
         "stage_total_stars": "",
         "finalStars": "",
         "totalStars": "",
         "final_stars": "",
+        "pre_photo_url": "",
         "record_card_img": "",
         "draft_img": "",
         "final_img": "",
+        "has_completed_ai": "",
+        "ai_feedback_text": "",
     }
 
     result = await db.students.update_many({}, {"$set": set_fields, "$unset": unset_fields})
 
-    print(f"重置完成：共更新 {result.modified_count} 位学生。")
-    print("说明：学号、姓名、课前记录卡与课前植物照片均已保留。")
+    print(f"Done. Updated students: {result.modified_count}")
+    print("Kept: student_id/student_name and pre_* media fields.")
+
+    if clear_media:
+        removed = clear_process_media_files()
+        print(f"Cleared local process image files: {removed}")
 
     client.close()
 

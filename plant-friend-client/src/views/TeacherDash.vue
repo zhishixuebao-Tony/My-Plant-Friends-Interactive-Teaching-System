@@ -19,7 +19,6 @@
           <div v-if="shouldShowStars(student)" class="star-row">
             {{ formatStars(getFinalStars(student)) }}
           </div>
-          <div v-if="student.final_img" class="medal-icon">🏅</div>
         </div>
       </div>
 
@@ -63,7 +62,9 @@
               <div class="stat-bg resource-bg" :style="{ width: Math.min((getResourceCount(row.key) / 100) * 100, 100) + '%' }"></div>
               <div class="stat-content">
                 <span class="stat-label">{{ row.label }}</span>
-                <span class="stat-value">{{ getResourceUserCount(row.key) }} 人 {{ getResourceCount(row.key) }} 次</span>
+                <span class="stat-value">
+                  {{ row.key === '__none_clicked__' ? `${getResourceUserCount(row.key)} 人` : `${getResourceUserCount(row.key)} 人 ${getResourceCount(row.key)} 次` }}
+                </span>
               </div>
             </div>
           </div>
@@ -162,7 +163,7 @@ import * as echarts from 'echarts';
 
 // --- 数据状态 ---
 const studentList = ref([]);
-const stats = ref({ online: 0, total: 50, table1: {}, table2: {}, table3: {}, table4: {}, table5: 0, resource_completed: 0 });
+const stats = ref({ online: 0, total: 50, table1: {}, table2: {}, table3: {}, table4: {}, resource_completed: 0 });
 
 const showDrawer = ref(false);
 const activeData = ref(null);
@@ -347,7 +348,6 @@ const fetchDashboardData = async () => {
       table2: res.data.table2_dimension || {},
       table3: res.data.table3_resource || {},
       table4: res.data.table4_writing || {},  
-      table5: res.data.table5_ai_count || 0,  
       resource_completed: res.data.resource_completed_count || 0,
     };
   } catch (err) {
@@ -500,10 +500,20 @@ const updateCharts = () => {
     series: [{
       type: 'bar',
       data: resourceRows.map((r) => ({
+        key: r.key,
         value: getResourceCount(r.key),
         userCount: getResourceUserCount(r.key),
       })),
-      label: { show: true, position: 'right', formatter: (params) => `${params.data.userCount}人 ${params.data.value}次` },
+      label: {
+        show: true,
+        position: 'right',
+        formatter: (params) => {
+          if (params?.data?.key === '__none_clicked__') {
+            return `${params.data.userCount}人`;
+          }
+          return `${params.data.userCount}人 ${params.data.value}次`;
+        },
+      },
       itemStyle: { borderRadius: [0, 4, 4, 0] },
     }]
   });
@@ -604,7 +614,6 @@ onUnmounted(() => {
 .id-tag { position: absolute; top: 4px; left: 6px; font-size: 12px; font-weight: 700; background: rgba(0, 0, 0, 0.05); padding: 2px 6px; border-radius: 4px; }
 .name-text { font-size: 15px; font-weight: 700; margin-top: 6px; }
 .star-row { margin-top: 4px; font-size: 14px; line-height: 1; letter-spacing: 1px; color: #f59e0b; font-weight: 700; }
-.medal-icon { position: absolute; top: -8px; right: -6px; font-size: 18px; }
 
 /* 表格与图表布局 */
 .analysis-grid {
