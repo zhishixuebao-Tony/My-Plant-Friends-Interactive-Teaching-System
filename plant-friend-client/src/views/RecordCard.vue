@@ -191,7 +191,7 @@ const onFinalSubmit = async () => {
     return;
   }
 
-  const stage3Stars = Number(hasUnseen.value) + Number(hasFeeling.value);
+  const stage3Stars = Number(hasUnseen.value || hasFeeling.value);
 
   isSubmitting.value = true;
   try {

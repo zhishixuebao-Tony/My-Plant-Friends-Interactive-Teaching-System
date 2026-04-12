@@ -159,7 +159,6 @@ import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { showImagePreview, showToast } from 'vant';
 import * as echarts from 'echarts';
-import { preloadTeacherAllImages } from '../utils/imagePreloader';
 
 // --- 数据状态 ---
 const studentList = ref([]);
@@ -192,9 +191,9 @@ const dimensionRows = [
 
 const resourceRows = [
   { key: '我的植物朋友照片', label: '我的植物朋友照片点击次数' },
-  { key: '感受小锦囊', label: '感受小锦囊' },
-  { key: '顺序百宝箱', label: '顺序百宝箱' },
-  { key: '词语百花园', label: '词语百花园' },
+  { key: '顺序百宝箱', label: '可以这样连' },
+  { key: '感受小锦囊', label: '可以这样合' },
+  { key: '词语百花园', label: '可以这样用' },
   { key: '__none_clicked__', label: '未点击任何资源人数' },
 ];
 
@@ -351,9 +350,6 @@ const fetchDashboardData = async () => {
       table5: res.data.table5_ai_count || 0,  
       resource_completed: res.data.resource_completed_count || 0,
     };
-    preloadTeacherAllImages(studentList.value).catch((error) => {
-      console.warn('Teacher image preloading failed:', error);
-    });
   } catch (err) {
     console.error('刷新大屏失败:', err);
   }

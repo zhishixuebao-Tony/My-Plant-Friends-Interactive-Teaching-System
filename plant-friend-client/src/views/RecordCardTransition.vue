@@ -20,7 +20,7 @@
                 {{ selection }}
               </span>
             </div>
-            <p class="stars-info">{{ starsMessage }}</p>
+            <p class="stars-info">{{ starsMessageFinal }}</p>
             <p v-if="starsEarned > 0" class="stars-reward">本环节奖励你 <span class="star-count">{{ starsEarned }}</span> 颗星⭐</p>
             <p v-else class="no-stars-message">你的认真记录同样值得表扬！</p>
           </div>
@@ -59,6 +59,15 @@ const displaySelections = computed(() => {
 
 const starsEarned = computed(() => {
   const selections = userStore.dimensionSelections || [];
+  const hasDiscovery = selections.some(
+    (selection) =>
+      selection.includes('（1）')
+      || selection.includes('(1)')
+      || selection.includes('（2）')
+      || selection.includes('(2)')
+  );
+  if (hasDiscovery) return 1;
+
   let stars = 0;
   selections.forEach(selection => {
     if (selection.includes('（1）有以前没观察到的')) {
@@ -93,6 +102,9 @@ const starsMessage = computed(() => {
     return '你发现了这么多，真是观察小能手！';
   }
 });
+
+const starsEarnedFinal = computed(() => starsEarned.value);
+const starsMessageFinal = computed(() => starsMessage.value);
 
 const goNext = () => {
   if (!canGoNext.value) return;

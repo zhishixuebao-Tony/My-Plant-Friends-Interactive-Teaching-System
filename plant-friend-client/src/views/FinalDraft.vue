@@ -41,7 +41,7 @@
         <section class="stage5-check-card">
           <div class="card-title">请勾选你试写环节完成的表现</div>
           <div class="eval-box">
-            <div class="group-title">1. 我试着写清楚了：</div>
+            <div class="group-title">1.我试着写清楚了我的植物朋友：</div>
             
             <button
               type="button"
@@ -49,7 +49,7 @@
               :class="{ active: hasMultiaspect, disabled: false }"
               @click="toggleMultiaspect"
             >
-              <span>（1）我能从多方面介绍</span>
+              <span>（1）我是从多方面写的</span>
               <span class="square" :class="{ checked: hasMultiaspect }">
                 {{ hasMultiaspect ? '✓' : '' }}
               </span>
@@ -61,7 +61,7 @@
               :class="{ active: hasOrderly, disabled: false }"
               @click="toggleOrderly"
             >
-              <span>（2）我能有顺序介绍</span>
+              <span>（2）我是按照一定顺序写的</span>
               <span class="square" :class="{ checked: hasOrderly }">
                 {{ hasOrderly ? '✓' : '' }}
               </span>
@@ -73,7 +73,7 @@
               :class="{ active: hasShared }"
               @click="toggleShared"
             >
-              <span>2.我分享了我的习作</span>
+              <span>2.我还愿意把习作分享给别人</span>
               <span class="square" :class="{ checked: hasShared }">
                 {{ hasShared ? '✓' : '' }}
               </span>
@@ -141,17 +141,7 @@ const stage1Stars = computed(() => Number(userStore.stage1Stars ?? 1));
 const stage3Stars = computed(() => Number(userStore.stage3Stars ?? 0));
 
 const stage5Stars = computed(() => {
-  let stars = 0;
-  
-  if (hasMultiaspect.value || hasOrderly.value) {
-    stars += 1;
-  }
-  
-  if (hasShared.value) {
-    stars += 1;
-  }
-  
-  return stars;
+  return Number(hasMultiaspect.value) + Number(hasOrderly.value) + Number(hasShared.value);
 });
 
 const totalStars = computed(() => stage1Stars.value + stage3Stars.value + stage5Stars.value);

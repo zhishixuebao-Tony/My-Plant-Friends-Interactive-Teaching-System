@@ -147,6 +147,43 @@ def _calc_stage5_stars(checks: List[str]) -> int:
     return int(has_option1) + int(has_option2)
 
 
+def _calc_stage3_stars(checks: List[str]) -> int:
+    values = _normalize_text_items(checks)
+    has_discovery = any(
+        ('（1）' in v)
+        or ('(1)' in v)
+        or ('（2）' in v)
+        or ('(2)' in v)
+        or ('以前没观察到' in v)
+        or ('有了点儿感受' in v)
+        or ('感受' in v)
+        for v in values
+    )
+    return 1 if has_discovery else 0
+
+
+def _calc_stage5_stars(checks: List[str]) -> int:
+    values = _normalize_text_items(checks)
+    has_multiaspect = any(
+        ('（1）' in v)
+        or ('(1)' in v)
+        or ('多方面' in v)
+        for v in values
+    )
+    has_orderly = any(
+        ('（2）' in v)
+        or ('(2)' in v)
+        or ('顺序' in v)
+        for v in values
+    )
+    has_shared = any(
+        ('分享' in v)
+        or ('愿意把习作分享' in v)
+        for v in values
+    )
+    return int(has_multiaspect) + int(has_orderly) + int(has_shared)
+
+
 @router.post('/stage0/login')
 async def student_login(req: LoginReq):
     sid = _student_id_text(req.student_id)
@@ -206,7 +243,7 @@ async def submit_stage1(req: SensoryReq):
     if _is_judge_submission(req.student_id):
         return {'status': 'success'}
 
-    stage1_stars = 1 if len(_normalize_sensory_checks(req.checks)) > 0 else 0
+    stage1_stars = 1
     await db_instance.db.students.update_one(
         _student_id_query(req.student_id),
         {

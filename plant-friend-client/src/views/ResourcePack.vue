@@ -17,38 +17,39 @@
     </div>
 
     <div class="resource-layout">
-      <div class="pack-list-view">
-        <div class="pack-grid">
-          <div class="pack-card">
-            <div class="pack-card-title">我的植物朋友</div>
-            <div class="plant-photo-strip">
-              <button
-                v-for="(photo, index) in displayedPlantPhotos"
-                :key="index"
-                type="button"
-                class="plant-photo-btn"
-                @click="onPhotoPreview(index)"
-              >
-                <van-image
-                  :src="photo"
-                  fit="cover"
-                  radius="10"
-                  class="plant-photo-image"
-                />
-              </button>
-            </div>
+      <div class="resource-stack">
+        <div class="pack-card plant-card">
+          <div class="pack-card-title">我的植物朋友</div>
+          <div class="plant-photo-strip">
+            <button
+              v-for="(photo, index) in displayedPlantPhotos"
+              :key="index"
+              type="button"
+              class="plant-photo-btn"
+              @click="onPhotoPreview(index)"
+            >
+              <van-image :src="photo" fit="cover" radius="10" class="plant-photo-image" />
+            </button>
           </div>
+        </div>
 
-          <div v-for="pack in resourcePacks" :key="pack.id" class="pack-card">
-            <div class="pack-card-title">{{ pack.title }}</div>
-            <van-image
-              :src="pack.images[0]?.url"
-              :alt="pack.images[0]?.name || pack.title"
-              fit="contain"
-              radius="10"
-              class="pack-card-image"
-              @click="onPreview(pack.id, 0)"
-            />
+        <div class="help-section">
+          <div class="help-title">我需要一点帮助：</div>
+          <div class="help-grid">
+            <button
+              v-for="pack in resourcePacks"
+              :key="pack.id"
+              type="button"
+              class="help-item"
+              @click="onPreview(pack)"
+            >
+              <div class="help-item-content">
+                <div class="help-item-inner">
+                  <div class="help-item-text">{{ pack.prompt }}</div>
+                  <div class="help-item-tip">点击查看</div>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -86,36 +87,39 @@ const onPhotoPreview = (startIndex) => {
 
 const resourcePacks = ref([
   {
-    id: 'feeling',
-    title: '感受小锦囊',
-    images: [{ name: '情感表达方法', url: '/resources/feeling.jpg' }],
-  },
-  {
     id: 'orderly',
     title: '顺序百宝箱',
-    images: [{ name: '有序描写步骤', url: '/resources/orderly.jpg' }],
+    prompt: '我已经想好了“先写什么再写什么”，该怎么连起来呢？',
+    imageName: '有序描写步骤',
+    imageUrl: '/resources/orderly.jpg',
+  },
+  {
+    id: 'feeling',
+    title: '感受小锦囊',
+    prompt: '我记录了很多的发现，该怎么合起来写呢？',
+    imageName: '情感表达方法',
+    imageUrl: '/resources/feeling.jpg',
   },
   {
     id: 'vocabulary',
     title: '词语百花园',
-    images: [{ name: '词句积累', url: '/resources/vocabulary.jpg' }],
+    prompt: '我想把植物朋友写清楚，可以用上哪些优美生动的词句呢？',
+    imageName: '词句积累',
+    imageUrl: '/resources/vocabulary.jpg',
   },
 ]);
 
-const onPreview = async (packId, index) => {
-  const pack = resourcePacks.value.find((p) => p.id === packId);
-  if (!pack) return;
-
+const onPreview = async (pack) => {
   showImagePreview({
-    images: pack.images.map((img) => img.url),
-    startPosition: index,
+    images: [pack.imageUrl],
+    startPosition: 0,
     closeable: true,
     closeOnClickOverlay: true,
     teleport: 'body',
   });
 
   try {
-    const resourceName = `${pack.title}-${pack.images[index].name}`;
+    const resourceName = `${pack.title}-${pack.imageName}`;
     await axios.post(`/api/student/track-resource-click/${userStore.studentId}/${resourceName}`);
   } catch (error) {
     console.warn('上报资源点击失败:', error);
@@ -163,72 +167,49 @@ const submitStage4 = async () => {
   padding: 16px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: stretch;
+  justify-content: center;
   overflow: hidden;
 }
 
-.pack-list-view {
+.resource-stack {
   flex: 1;
   min-height: 0;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  width: 100%;
-}
-
-.pack-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  align-items: stretch;
-  justify-content: center;
   width: min(100%, 1200px);
-  height: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .pack-card {
-  --media-height: clamp(160px, 24vh, 280px);
   background: #fff;
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   border: 1px solid #e8edf6;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  height: 100%;
-  min-height: 0;
+}
+
+.plant-card {
+  flex: 0 0 auto;
+  padding: 18px 18px 20px;
 }
 
 .pack-card-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.pack-card-image {
-  width: 100%;
-  height: var(--media-height);
-  max-height: var(--media-height);
-  min-height: var(--media-height);
-  object-fit: contain;
-  border: 1px solid #dbe4f3;
-  border-radius: 10px;
-  background: #f8fbff;
-  padding: 6px;
-  box-sizing: border-box;
-  overflow: hidden;
-  cursor: pointer;
-  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2d3d;
 }
 
 .plant-photo-strip {
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -237,20 +218,98 @@ const submitStage4 = async () => {
   padding: 0;
   background: transparent;
   cursor: pointer;
+  width: min(31%, 280px);
+  flex: 0 1 min(31%, 280px);
 }
 
 .plant-photo-image {
   width: 100%;
-  height: var(--media-height);
+  height: clamp(180px, 24vh, 290px);
   border: 1px solid #dbe4f3;
   background: #f8fbff;
 }
 
-.photo-tip {
-  font-size: 14px;
-  color: #8a97ab;
+.help-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.help-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1f2d3d;
   text-align: center;
-  margin-top: 8px;
+}
+
+.help-grid {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.help-item {
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #e9f5ff 0%, #dcecff 100%);
+  text-align: left;
+  padding: 8px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(37, 86, 143, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.help-item:hover {
+  box-shadow: 0 12px 22px rgba(37, 86, 143, 0.24);
+}
+
+.help-item:active {
+  transform: scale(0.98);
+}
+
+.help-item-text {
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: #23453a;
+  text-align: center;
+  font-family: "STXingkai", "KaiTi", "STKaiti", "Microsoft YaHei", sans-serif;
+}
+
+.help-item-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.help-item-inner {
+  width: calc(100% - 14px);
+  margin: 0 auto;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffffff 0%, #f4fbec 100%);
+  padding: 10px 10px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  box-shadow: 0 6px 12px rgba(76, 135, 96, 0.2);
+}
+
+.help-item-tip {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #2d8a4e;
+  letter-spacing: 0.5px;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
 .top-nav {
@@ -293,25 +352,6 @@ const submitStage4 = async () => {
   font-weight: 700;
 }
 
-@media (min-width: 900px) {
-  .pack-grid {
-    grid-template-columns: repeat(2, minmax(280px, 1fr));
-    gap: 24px;
-    max-width: 1200px;
-  }
-
-  .pack-card {
-    --media-height: clamp(200px, 25vh, 340px);
-    padding: 28px;
-    gap: 20px;
-  }
-
-  .pack-card-title {
-    font-size: 18px;
-  }
-
-}
-
 @media (max-width: 900px) {
   .top-nav {
     grid-template-columns: 112px 1fr 112px;
@@ -323,31 +363,41 @@ const submitStage4 = async () => {
     padding-inline: 8px;
   }
 
-  .pack-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
   .pack-card {
-    --media-height: clamp(120px, 18vh, 200px);
     padding: 12px;
   }
 
-  .pack-card-title {
+  .help-title {
+    font-size: 18px;
+  }
+
+  .help-item-text {
     font-size: 15px;
   }
 
+  .help-item-tip {
+    font-size: 14px;
+  }
+
+  .plant-photo-image {
+    height: clamp(150px, 20vh, 230px);
+  }
 }
 
 @media (max-width: 600px) {
-  .pack-grid {
+  .help-grid {
     grid-template-columns: 1fr;
   }
 
   .plant-photo-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
+  }
+
+  .plant-photo-btn {
+    width: min(32%, 180px);
+    flex-basis: min(32%, 180px);
   }
 }
 </style>
