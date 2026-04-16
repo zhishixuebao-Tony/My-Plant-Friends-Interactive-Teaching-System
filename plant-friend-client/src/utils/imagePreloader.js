@@ -2,13 +2,17 @@ import { toDisplayImageUrl } from './imageProxy';
 
 const loadedUrls = new Set();
 const loadingUrls = new Set();
+const scheduledStudentPreloadIds = new Set();
 
-const STUDENT_STATIC_IMAGE_URLS = [
+const STUDENT_WELCOME_CRITICAL_URLS = [
   '/login/background.jpg',
   '/welcome/background.jpg',
   '/welcome/book-page.png',
   '/welcome/school-badge.png',
   '/welcome/course-title.png',
+];
+
+const STUDENT_POST_WELCOME_IMAGE_URLS = [
   '/transition-pages/sensory-transition/background.jpg',
   '/transition-pages/sensory-transition/book-page.png',
   '/transition-pages/recordcard-transition/background.jpg',
@@ -74,12 +78,46 @@ export const preloadImages = async (urls, options = {}) => {
 };
 
 export const preloadStudentAllImages = async (studentData) => {
-  const urls = [...STUDENT_STATIC_IMAGE_URLS, ...collectStudentDynamicUrls(studentData)];
-  await preloadImages(urls, { concurrency: 6 });
+  const urls = [
+    ...STUDENT_WELCOME_CRITICAL_URLS,
+    ...STUDENT_POST_WELCOME_IMAGE_URLS,
+    ...collectStudentDynamicUrls(studentData),
+  ];
+  await preloadImages(urls, { concurrency: 4 });
+};
+
+export const scheduleStudentPreloadAfterWelcome = (studentData, options = {}) => {
+  const sid = String(studentData?.student_id || '').trim();
+  if (!sid) return;
+  if (scheduledStudentPreloadIds.has(sid)) return;
+  scheduledStudentPreloadIds.add(sid);
+
+  const delayMs = Math.max(0, Number(options.delayMs) || 900);
+  const task = async () => {
+    const urls = [
+      ...STUDENT_POST_WELCOME_IMAGE_URLS,
+      ...collectStudentDynamicUrls(studentData),
+    ];
+    try {
+      await preloadImages(urls, { concurrency: 3 });
+    } catch (_) {
+      // Keep preload best-effort and non-blocking.
+    }
+  };
+
+  window.setTimeout(() => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => {
+        task();
+      }, { timeout: 1500 });
+      return;
+    }
+    task();
+  }, delayMs);
 };
 
 export const preloadTeacherAllImages = async (students = []) => {
   const dynamicUrls = students.flatMap((student) => collectStudentDynamicUrls(student));
-  const urls = [...STUDENT_STATIC_IMAGE_URLS, ...dynamicUrls];
+  const urls = [...STUDENT_WELCOME_CRITICAL_URLS, ...STUDENT_POST_WELCOME_IMAGE_URLS, ...dynamicUrls];
   await preloadImages(urls, { concurrency: 10 });
 };

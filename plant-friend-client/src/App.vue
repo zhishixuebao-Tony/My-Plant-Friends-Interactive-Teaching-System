@@ -6,7 +6,7 @@
 
       <template v-else>
         <!-- 顶部导航栏，测试开启，使用关闭 -->
-        <!-- 
+         
         <div v-if="showStudentStageNav" class="student-stage-nav">
           <button
             v-for="item in stageNavItems"
@@ -19,7 +19,7 @@
             {{ item.label }}
           </button>
         </div>
-        -->
+        
 
         <Login v-if="userStore.currentStage === '0'" />
         <Welcome v-else-if="userStore.currentStage === 'welcome'" />
@@ -106,6 +106,20 @@ const onKeyDown = (event) => {
   }
 };
 
+const onStudentFlowButtonPress = (event) => {
+  if (!isStudentFlowActive.value) return;
+  if (document.fullscreenElement) return;
+
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const clickable = target.closest('button, .van-button, [role="button"]');
+  if (!clickable) return;
+
+  document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch((error) => {
+    console.warn('Request fullscreen failed on button press:', error);
+  });
+};
+
 const onStudentLoginSuccess = () => {
   requestStudentFullscreen();
 };
@@ -175,6 +189,7 @@ onMounted(async () => {
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
   window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('pointerdown', onStudentFlowButtonPress, true);
   window.addEventListener('student-login-success', onStudentLoginSuccess);
 
   fetchStudentControlState();
@@ -185,6 +200,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   window.removeEventListener('keydown', onKeyDown, true);
+  window.removeEventListener('pointerdown', onStudentFlowButtonPress, true);
   window.removeEventListener('student-login-success', onStudentLoginSuccess);
   if (studentControlSocket.value) {
     studentControlSocket.value.close();

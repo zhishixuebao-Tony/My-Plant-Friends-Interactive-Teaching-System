@@ -72,6 +72,39 @@ def _student_id_query(raw_student_id: str) -> dict:
     return {'student_id': {'$in': list(query_values)}}
 
 
+def _to_clean_list(values):
+    if not isinstance(values, list):
+        return []
+    return [str(v or '').strip() for v in values if str(v or '').strip()]
+
+
+def _calc_stage1_from_sensory(sensory_values: list) -> int:
+    return 1 if len(_to_clean_list(sensory_values)) > 0 else 0
+
+
+def _calc_stage3_from_dimension(dimension_values: list) -> int:
+    values = _to_clean_list(dimension_values)
+    has_discovery = any(
+        ('（1）' in v)
+        or ('(1)' in v)
+        or ('（2）' in v)
+        or ('(2)' in v)
+        or ('以前没观察到' in v)
+        or ('有了点儿感受' in v)
+        or ('感受' in v)
+        for v in values
+    )
+    return 1 if has_discovery else 0
+
+
+def _calc_stage5_from_checks(stage5_checks: list) -> int:
+    values = _to_clean_list(stage5_checks)
+    has_multiaspect = any(('（1）' in v) or ('(1)' in v) or ('多方面' in v) for v in values)
+    has_orderly = any(('（2）' in v) or ('(2)' in v) or ('顺序' in v) for v in values)
+    has_shared = any(('分享' in v) or ('愿意把习作分享' in v) for v in values)
+    return int(has_multiaspect) + int(has_orderly) + int(has_shared)
+
+
 @router.get('/dashboard/statistics')
 async def get_dashboard_stats():
     cursor = db_instance.db.students.find({}, {'_id': 0}).sort('student_id', 1)
@@ -118,6 +151,27 @@ async def get_one_student_detail(student_id: str):
     if not student:
         return {'error': 'not found'}
 
+    sensory_values = student.get('sensory_evaluations', []) or []
+    dimension_values = student.get('dimension_evaluations', []) or []
+    stage5_checks = student.get('stage5_checks', []) or []
+
+    stage1_stars = int(student.get('stage1_stars', 0) or 0)
+    stage3_stars = int(student.get('stage3_stars', 0) or 0)
+    stage5_stars = int(student.get('stage5_stars', 0) or 0)
+
+    # 兜底：历史数据或异常写入时，按当前规则反推每环节星星
+    if stage1_stars <= 0:
+        stage1_stars = _calc_stage1_from_sensory(sensory_values)
+    if stage3_stars <= 0:
+        stage3_stars = _calc_stage3_from_dimension(dimension_values)
+    if stage5_stars <= 0:
+        stage5_stars = _calc_stage5_from_checks(stage5_checks)
+
+    total_stars = int(student.get('total_stars', 0) or 0)
+    computed_total = stage1_stars + stage3_stars + stage5_stars
+    if total_stars <= 0 or total_stars != computed_total:
+        total_stars = computed_total
+
     return {
         'student_id': student.get('student_id'),
         'student_name': student.get('student_name'),
@@ -127,6 +181,13 @@ async def get_one_student_detail(student_id: str):
         'pre_plant_1': student.get('pre_plant_1', ''),
         'pre_plant_2': student.get('pre_plant_2', ''),
         'pre_plant_3': student.get('pre_plant_3', ''),
+        'sensory_evaluations': sensory_values,
+        'dimension_evaluations': dimension_values,
+        'stage5_checks': stage5_checks,
+        'stage1_stars': stage1_stars,
+        'stage3_stars': stage3_stars,
+        'stage5_stars': stage5_stars,
+        'total_stars': total_stars,
     }
 
 

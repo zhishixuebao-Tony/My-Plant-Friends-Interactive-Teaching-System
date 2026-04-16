@@ -12,52 +12,15 @@
         @click="onNextStep"
         class="top-nav-action"
       >
-        提交并下一步
+        提交
       </van-button>
     </div>
 
     <div class="stage-body">
-      <section class="observe-panel">
-        <header class="panel-header">观察画面</header>
-
-        <div class="photo-main-box">
-          <van-image
-            v-if="currentPhoto"
-            :src="currentPhoto"
-            fit="contain"
-            radius="12"
-            class="photo-main"
-            @click="openImagePreview(selectedPhotoIndex)"
-          />
-          <div v-else class="empty-tip">暂无可观察照片</div>
-        </div>
-
-        <div class="photo-select-box">
-          <div class="select-title">植物朋友照片</div>
-          <div
-            v-if="photos.length > 0"
-            class="thumb-list"
-            :style="{ '--thumb-cols': Math.min(Math.max(photos.length, 1), 3) }"
-          >
-            <button
-              v-for="(img, idx) in photos"
-              :key="idx"
-              type="button"
-              class="thumb-item"
-              :class="{ active: selectedPhotoIndex === idx }"
-              @click="selectedPhotoIndex = idx"
-            >
-              <van-image :src="img" fit="cover" radius="8" class="thumb-img" />
-            </button>
-          </div>
-          <div v-else class="empty-tip small">暂无照片可选择</div>
-        </div>
-      </section>
-
       <section class="evaluate-panel">
-        <header class="panel-header">我用了哪些观察方法了解植物朋友？</header>
+        <header class="panel-header method-title">我用了哪些观察方法了解植物朋友？</header>
 
-        <div class="option-list" :style="{ '--option-rows': options.length }">
+        <div class="option-list">
           <button
             v-for="item in options"
             :key="item.name"
@@ -79,16 +42,15 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useUserStore } from '../store/user';
 import { submitSensoryApi } from '../api/student';
-import { showImagePreview, showToast } from 'vant';
+import { showToast } from 'vant';
 import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 const loading = ref(false);
 const checkedItems = ref([]);
-const selectedPhotoIndex = ref(0);
 const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.sensory));
 
 const options = [
@@ -99,36 +61,6 @@ const options = [
   { name: '尝一尝', icon: '👅' },
   { name: '其他', icon: '✨' },
 ];
-
-const photos = computed(() => userStore.prePlantPhotos || []);
-
-const currentPhoto = computed(() => {
-  if (photos.value.length === 0) return '';
-  return photos.value[selectedPhotoIndex.value] || photos.value[0];
-});
-
-watch(
-  () => photos.value.length,
-  (len) => {
-    if (len === 0) {
-      selectedPhotoIndex.value = 0;
-    } else if (selectedPhotoIndex.value >= len) {
-      selectedPhotoIndex.value = 0;
-    }
-  }
-);
-
-const openImagePreview = (startIndex) => {
-  if (photos.value.length === 0) return;
-  showImagePreview({
-    images: photos.value,
-    startPosition: startIndex,
-    closeable: true,
-    closeOnClickImage: true,
-    closeOnClickOverlay: true,
-    teleport: 'body',
-  });
-};
 
 const toggleItem = (name) => {
   if (checkedItems.value.includes(name)) {
@@ -158,14 +90,16 @@ const onNextStep = async () => {
 </script>
 
 <style scoped>
+/* =========== 全局背景手账化 =========== */
 .stage-container {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #f5f7fb;
+  background: #F4F1E1; /* 整体页面变成复古牛皮纸色 */
 }
 
+/* =========== 顶部导航栏（融入纸张风格） =========== */
 .top-nav {
   min-height: 56px;
   padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
@@ -173,20 +107,22 @@ const onNextStep = async () => {
   grid-template-columns: 132px 1fr 132px;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-  border-bottom: 1px solid #dfe6f3;
-  box-shadow: 0 3px 10px rgba(30, 60, 120, 0.08);
+  background: #FDFBF2; /* 导航栏纸张色 */
+  border-bottom: 2px dashed #D4CBB3; /* 虚线边缘 */
+  box-shadow: 0 4px 10px rgba(90, 76, 67, 0.05); /* 柔和暖色阴影 */
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .top-nav-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #1f2d3d;
+  font-size: 21px;
+  font-weight: 800;
+  color: #5A4C43; /* 深棕灰字体 */
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 1px;
 }
 
 .top-nav-spacer {
@@ -198,170 +134,185 @@ const onNextStep = async () => {
   justify-self: end;
 }
 
+/* 覆盖 Vant 按钮样式 - 3D手账风 */
+:deep(.van-button--primary) {
+  background-color: #5C8D6D !important;
+  border-color: #5C8D6D !important;
+  box-shadow: 0 4px 0 #3A664A !important;
+  color: #FDFBF2 !important;
+  transition: all 0.1s;
+}
+
+:deep(.van-button--primary:active) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #3A664A !important;
+}
+
+/* 禁用状态的纸板质感 */
+:deep(.van-button--primary:disabled) {
+  background-color: #E3DBC7 !important;
+  border-color: #E3DBC7 !important;
+  color: #A3968C !important;
+  box-shadow: none !important;
+  opacity: 1 !important; /* 覆盖vant默认的透明度，保持纸板实色感 */
+  transform: none !important;
+}
+
+/* =========== 内容区域 =========== */
 .stage-body {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 12px;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-.observe-panel,
+/* 核心记录面板 - 手账内页质感 */
 .evaluate-panel {
-  background: #fff;
-  border-radius: 14px;
-  padding: 12px;
+  background: #FDFBF2;
+  border-radius: 16px;
+  padding: 30px 24px 34px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  border: 1px solid #e8edf6;
-  overflow: hidden;
+  gap: 18px;
+  border: 2px dashed #D4CBB3;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  width: min(96%, 1220px);
+  max-height: 100%;
+  overflow-y: auto;
+  position: relative; /* 为伪元素胶带定位 */
+}
+
+/* 面板顶部的小胶带装饰（纯CSS） */
+.evaluate-panel::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1deg);
+  width: 120px;
+  height: 24px;
+  background-color: rgba(135, 179, 146, 0.6);
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
+  border-radius: 2px;
+  z-index: 10;
 }
 
 .panel-header {
   font-size: 16px;
   font-weight: 700;
-  color: #243447;
+  color: #5A4C43;
 }
 
-.photo-main-box {
-  flex: 0 0 auto;
-  height: min(40vh, 300px);
-  border-radius: 12px;
-  border: 1px dashed #cfd8e8;
-  background: #fafcff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
+.method-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 10px;
+  position: relative;
+  display: inline-block;
+  align-self: center;
 }
 
-.photo-main {
+/* 标题底部加一条马克笔风格的高亮线 */
+.method-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: 8px;
+  background: rgba(246, 218, 115, 0.6); /* 暖黄色马克笔 */
+  z-index: -1;
+  border-radius: 4px;
 }
 
-.photo-select-box {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid #edf1f7;
-  padding-top: 8px;
-}
-
-.select-title {
-  font-size: 13px;
-  color: #4b5d75;
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-
-.thumb-list {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(var(--thumb-cols), minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 6px;
-}
-
-.thumb-item {
-  width: 100%;
-  height: 100%;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.thumb-item.active {
-  border-color: #377dff;
-}
-
-.thumb-img {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
+/* =========== 选项列表（互动卡片） =========== */
 .option-list {
-  flex: 1;
-  min-height: 0;
   display: grid;
-  grid-template-rows: repeat(var(--option-rows), minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 4px; /* 为阴影留出空间 */
 }
 
+/* 选项厚纸板样式 */
 .option-card {
   width: 100%;
-  height: 100%;
-  border: 1.5px solid #d9e2ef;
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0 12px 0 14px;
+  min-height: 108px;
+  border: 2px solid #E3DBC7;
+  border-radius: 14px;
+  background: #FAF7EA;
+  padding: 0 16px 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   text-align: left;
+  box-shadow: 0 6px 0 #E3DBC7; /* 坚实的底部阴影，像厚积木/纸板 */
+  transition: all 0.15s ease;
 }
 
+/* 选中状态：按压下去，变绿 */
 .option-card.active {
-  border-color: #377dff;
-  background: #f2f7ff;
+  background: #5C8D6D;
+  border-color: #3A664A;
+  transform: translateY(6px); /* 按下去 */
+  box-shadow: 0 0 0 #3A664A; /* 阴影消失 */
 }
 
 .option-text {
-  font-size: 18px;
-  color: #1f2d3d;
-  font-weight: 600;
+  font-size: 22px;
+  color: #5A4C43;
+  font-weight: 800;
+  transition: color 0.15s;
 }
 
+/* 选中后文字变纸白色 */
+.option-card.active .option-text {
+  color: #FDFBF2;
+}
+
+/* 右侧勾选框 - 未选中像盖章区 */
 .option-check {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  border: 2px solid #c2cede;
-  background: #f8fbff;
+  border-radius: 50%; /* 改成圆形更童趣 */
+  border: 2px dashed #D4CBB3;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #377dff;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 900;
   flex-shrink: 0;
+  transition: all 0.2s;
 }
 
+/* 选中后的打钩状态 */
 .option-check.checked {
-  border-color: #377dff;
-  background: #eaf2ff;
+  border: none;
+  background: #FDFBF2;
+  color: #5C8D6D; /* 绿色的钩 */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* 微微浮起 */
+  transform: scale(1.1) rotate(-5deg); /* 选中时有一点俏皮的放大和倾斜 */
 }
+
 
 :deep(.van-button--large) {
   height: 44px;
 }
 
 :deep(.top-nav-action.van-button) {
-  height: 34px;
-  padding-inline: 10px;
-  font-size: 13px;
-  font-weight: 700;
+  height: 40px;
+  padding-inline: 18px;
+  font-size: 16px;
+  font-weight: 800;
 }
 
-.empty-tip {
-  color: #8a97ab;
-  font-size: 14px;
-}
 
-.empty-tip.small {
-  font-size: 12px;
-}
-
+/* =========== 平板竖屏/小屏幕适配 =========== */
 @media (max-width: 900px) {
   .top-nav {
     grid-template-columns: 112px 1fr 112px;
@@ -369,18 +320,38 @@ const onNextStep = async () => {
   }
 
   :deep(.top-nav-action.van-button) {
-    font-size: 12px;
-    padding-inline: 8px;
+    font-size: 14px;
+    padding-inline: 14px;
   }
 
   .stage-body {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 10px;
+    padding: 12px;
   }
 
-  .photo-main-box {
-    height: min(30vh, 220px);
+  .evaluate-panel {
+    padding: 24px 16px 26px;
+  }
+
+  .method-title {
+    font-size: 21px;
+  }
+
+  .option-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .option-card {
+    min-height: 96px;
+    box-shadow: 0 4px 0 #E3DBC7;
+  }
+  
+  .option-card.active {
+    transform: translateY(4px);
+  }
+
+  .option-text {
+    font-size: 19px;
   }
 }
 </style>

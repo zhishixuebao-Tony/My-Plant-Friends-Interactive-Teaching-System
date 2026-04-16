@@ -12,6 +12,8 @@ if (!import.meta.env.DEV && apiBase) {
   axios.defaults.baseURL = apiBase;
 }
 
+document.title = '我的植物朋友';
+
 const app = createApp(App);
 const pinia = createPinia();
 

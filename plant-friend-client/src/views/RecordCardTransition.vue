@@ -21,7 +21,7 @@
               </span>
             </div>
             <p class="stars-info">{{ starsMessageFinal }}</p>
-            <p v-if="starsEarned > 0" class="stars-reward">本环节奖励你 <span class="star-count">{{ starsEarned }}</span> 颗星⭐</p>
+            <p v-if="starsEarned > 0" class="stars-reward">本环节奖励你 <span class="star-count">{{ starsEarned }}</span> 个太阳☀</p>
             <p v-else class="no-stars-message">你的认真记录同样值得表扬！</p>
           </div>
         </div>
@@ -117,6 +117,7 @@ const goNext = () => {
   height: 100dvh;
   overflow: hidden;
   background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.34) 0%, rgba(0, 0, 0, 0.34) 100%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(240, 251, 240, 0.2) 100%),
     url('/transition-pages/recordcard-transition/background.jpg');
   background-color: #e8f3e6;
@@ -269,7 +270,7 @@ const goNext = () => {
 .grass-btn {
   position: absolute;
   right: 4.4vw;
-  bottom: 4.4vh;
+  bottom: 6vh;
   border: 0;
   background: linear-gradient(180deg, #73d46d 0%, #2d8a4e 100%);
   color: #fff;
@@ -348,7 +349,7 @@ const goNext = () => {
 
   .grass-btn {
     right: 3vw;
-    bottom: 3vh;
+    bottom: 4.5vh;
     padding: 12px 18px 10px;
     font-size: 18px;
   }
