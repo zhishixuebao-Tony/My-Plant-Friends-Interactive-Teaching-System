@@ -2,11 +2,12 @@
   <div class="stage-container">
     <div class="top-nav">
       <span class="top-nav-spacer" aria-hidden="true"></span>
-      <div class="top-nav-title">看一看，向伙伴“学一学”</div>
+      <div class="top-nav-title">记录我的植物朋友</div>
       <van-button type="primary" round size="small" :disabled="!canGoNext" @click="goNext" class="top-nav-action">下一步</van-button>
     </div>
 
     <div class="stage-body">
+      <div class="stage-subtitle">看一看，向伙伴“学一学”</div>
       <div class="cards-grid">
         <div class="card-slot" v-for="item in cardSlots" :key="item.id">
           <div class="slot-title">{{ item.title }}</div>
@@ -48,6 +49,11 @@ const cardSlots = [
     id: 3,
     title: '记录卡 3',
     url: '/ViewRecordCards/RecordCard3.png',
+  },
+  {
+    id: 4,
+    title: '记录卡 4',
+    url: '/ViewRecordCards/RecordCard4.png',
   },
 ];
 
@@ -138,23 +144,33 @@ const previewCard = (url) => {
 /* =========== 内容区域 =========== */
 .stage-body {
   flex: 1;
-  padding: 30px 20px;
+  padding: 16px 16px 14px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto; /* 允许内容滚动 */
+  justify-content: center;
+  gap: 10px;
+  overflow: hidden; /* 固定一屏，不允许滚动 */
+}
+
+.stage-subtitle {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  text-align: center;
+  font-size: clamp(18px, 2.2vw, 22px);
+  font-weight: 800;
+  color: #5C8D6D;
+  letter-spacing: 1px;
 }
 
 /* =========== 卡片网格 =========== */
 .cards-grid {
-  flex: 1;
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: auto;
-  gap: 24px; /* 拉开间距，更像散落的照片 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 1.8vw, 18px);
   align-content: center;
-  width: min(100%, 1200px);
+  width: min(100%, 980px);
   margin: 0 auto;
 }
 
@@ -163,20 +179,35 @@ const previewCard = (url) => {
   background: #FDFBF2; /* 相纸白 */
   border: 1px solid #E3DBC7; /* 微微泛黄的边缘 */
   border-radius: 4px; /* 拍立得的硬朗小圆角 */
-  padding: 16px 14px 20px; /* 底部留白多一点，写tip */
+  padding: 12px 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  height: clamp(260px, 50vh, 380px);
+  gap: 8px;
+  height: clamp(170px, 23vh, 230px);
   box-shadow: 2px 6px 18px rgba(90, 76, 67, 0.12); /* 纸张漂浮阴影 */
   position: relative; /* 为顶部纸胶带定位 */
   transition: all 0.25s ease-out;
 }
 
-/* 互动反馈：悬停/点击时卡片微微翘起 */
-.card-slot:hover, .card-slot:active {
-  transform: translateY(-6px) rotate(1deg);
-  box-shadow: 4px 12px 24px rgba(90, 76, 67, 0.18);
+@media (orientation: landscape) {
+  .stage-body {
+    padding: 18px 18px 14px;
+    gap: 14px;
+  }
+
+  .cards-grid {
+    width: min(100%, 1180px);
+    gap: clamp(12px, 1.8vw, 20px);
+  }
+
+  .card-slot {
+    height: clamp(225px, 32vh, 310px);
+    padding: 14px 12px;
+  }
+
+  .slot-tip {
+    padding: 6px 0;
+  }
 }
 
 /* 纯CSS装饰：顶部的半透明和纸胶带 */
@@ -207,11 +238,11 @@ const previewCard = (url) => {
 
 /* =========== 卡片内部文字与图片 =========== */
 .slot-title {
-  font-size: 18px;
+  font-size: clamp(14px, 1.9vw, 18px);
   font-weight: 800;
   color: #5A4C43;
   text-align: center;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .slot-image {
@@ -228,17 +259,13 @@ const previewCard = (url) => {
 :deep(.van-image__img) {
   transition: transform 0.3s ease;
 }
-.card-slot:hover :deep(.van-image__img) {
-  transform: scale(1.02);
-}
-
 .slot-tip {
-  font-size: 15px;
+  font-size: clamp(12px, 1.5vw, 14px);
   font-weight: 800;
   color: #5C8D6D; /* 护眼深绿 */
   text-align: center;
   background: rgba(92, 141, 109, 0.1); /* 浅绿底色强调 */
-  padding: 6px 0;
+  padding: 4px 0;
   border-radius: 6px;
   margin-top: auto; /* 始终贴近底部 */
 }
@@ -264,17 +291,40 @@ const previewCard = (url) => {
   }
 
   .stage-body {
-    padding: 20px 14px;
+    padding: 12px 10px 10px;
   }
 
   .cards-grid {
-    grid-template-columns: 1fr;
-    gap: 28px; /* 单列时拉开更大间距，防止胶带遮挡 */
-    padding-top: 10px; /* 给最上面的胶带留出空间 */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .card-slot {
-    height: 280px; /* 竖屏时固定一个合适的高度 */
+    height: clamp(145px, 21vh, 185px);
+    padding: 10px 8px;
+  }
+
+  .card-slot::before {
+    top: -8px;
+    width: 56px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .stage-body {
+    padding: 14px 12px 12px;
+    gap: 10px;
+  }
+
+  .cards-grid {
+    width: min(100%, 1020px);
+    gap: 10px;
+  }
+
+  .card-slot {
+    height: clamp(205px, 35vh, 270px);
+    padding: 12px 10px;
   }
 }
 </style>

@@ -21,21 +21,19 @@
 
     <div v-if="!showCertificate" class="main-board">
       <div class="vine-stage">
-        <div class="stars-summary">当前总计获得：<span>{{ totalStars }}</span> 个太阳</div>
+        <div class="stars-summary">当前总计获得：<span>{{ totalStars }}</span> 缕阳光</div>
         <div class="trees-scene" aria-hidden="true"></div>
 
         <div class="tree-label tree-a">
-          <div class="title">了解</div>
-          <div class="sub">已获得 1 ☀</div>
+          <div class="label-line">了解 <span class="label-reward">获得1</span> <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
         </div>
 
         <div class="tree-label tree-b">
-          <div class="title">记录</div>
-          <div class="sub">已获得 {{ stage3Stars }} ☀</div>
+          <div class="label-line">记录 <span class="label-reward">获得1</span> <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
         </div>
 
         <div class="tree-label tree-c">
-          <div class="title">试写</div>
+          <div class="label-line">试写</div>
         </div>
 
         <section class="stage5-check-card">
@@ -68,7 +66,7 @@
 
             <button
               type="button"
-              class="check-row"
+              class="check-row main"
               :class="{ active: hasShared }"
               @click="toggleShared"
             >
@@ -78,43 +76,23 @@
               </span>
             </button>
           </div>
-          <div class="stage5-star-tip">试写环节获得：{{ stage5Stars }} 个太阳 ☀</div>
+          <div class="stage5-star-tip">试写环节获得：{{ stage5Stars }} 缕阳光 <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
         </section>
       </div>
 
     </div>
 
     <div v-else class="certificate-wrap">
-      <span class="cert-deco leaf leaf-a" aria-hidden="true"></span>
-      <span class="cert-deco leaf leaf-b" aria-hidden="true"></span>
-      <span class="cert-deco leaf leaf-c" aria-hidden="true"></span>
-      <span class="cert-deco flower flower-a" aria-hidden="true"></span>
-      <span class="cert-deco flower flower-b" aria-hidden="true"></span>
-      <span class="cert-deco ladybug" aria-hidden="true"></span>
-      <div class="certificate">
-        <div class="cert-inner">
-          <span class="vine-corner vine-tl" aria-hidden="true"></span>
-          <span class="vine-corner vine-tr" aria-hidden="true"></span>
-          <span class="vine-corner vine-bl" aria-hidden="true"></span>
-          <span class="vine-corner vine-br" aria-hidden="true"></span>
-          <div class="cert-title">荣 誉 奖 状</div>
-          <div class="cert-body">
-            <p>亲爱的 <span class="strong-name">{{ displayName }}</span> 同学：</p>
-            <p class="indent-line">在今天的学习中，你种下了一颗小种子，并且你共获得了<span class="strong-num">{{ totalStars }}</span>个小太阳！</p>
-            <p class="indent-line">根据你的表现，特授予你以下称号：</p>
-            <p class="badge-title-row">
-              <span class="badge-star" aria-hidden="true">☀</span>
-              <span class="badge-title">{{ awardTitle }}</span>
-              <span class="badge-star" aria-hidden="true">☀</span>
-            </p>
-          </div>
-          <div class="cert-footer">
-            <span>重庆市人民小学校</span>
-            <span>{{ todayText }}</span>
-          </div>
-        </div>
+      <div class="certificate-scene" aria-hidden="true"></div>
+      <div class="certificate-copy">
+        <p class="cert-main-text">
+          亲爱的 <span class="strong-name">{{ displayName }}</span> 同学，在今天的学习中，你种下了一颗种子，并且一共为它获得了
+          <span class="strong-num">{{ totalStars }}</span> 缕阳光，在你的呵护下，它已经生根发芽……
+        </p>
       </div>
-
+      <div class="certificate-book-area" aria-hidden="true">
+        <div class="certificate-book-cover"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -159,14 +137,6 @@ const stage5Stars = computed(() => {
 const totalStars = computed(() => stage1Stars.value + stage3Stars.value + stage5Stars.value);
 
 const displayName = computed(() => userStore.studentName || '小朋友');
-const todayText = new Date().toLocaleDateString();
-
-const awardTitle = computed(() => {
-  if (totalStars.value >= 5) return '小小植物学家';
-  if (totalStars.value >= 3) return '优秀观察员';
-  return '植物好朋友';
-});
-
 const launchConfetti = () => {
   const end = Date.now() + 2200;
   const defaults = { startVelocity: 35, spread: 100, ticks: 80, zIndex: 1000 };
@@ -368,48 +338,54 @@ const submitStage5 = async () => {
   background-repeat: no-repeat;
 }
 
-/* 树木路标：手账便利贴 */
+/* 树木路标：贴合背景木牌 */
 .tree-label {
   position: absolute;
   z-index: 2;
-  padding: 10px 14px;
-  border-radius: 6px;
-  background: #FAF7EA;
-  border: 2px solid #E3DBC7;
-  color: #5A4C43;
+  width: 200px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #5f3e23;
   text-align: center;
-  box-shadow: 0 4px 0 #E3DBC7; /* 坚实的积木阴影 */
+  text-shadow: 0 1px 0 rgba(255, 235, 210, 0.5);
 }
 
-.tree-label .title {
-  font-size: 24px;
+.tree-label .label-line {
+  font-size: 33px;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.tree-label .sub {
-  margin-top: 4px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #D98C3A;
+.tree-label .label-reward {
+  font-size: 0.68em;
+  color: #a6661f;
+  font-weight: 900;
 }
 
-.tree-a { left: 13%; bottom: 9%; width: 120px; transform: rotate(-2deg); }
-.tree-b { left: 42%; bottom: 9%; width: 120px; transform: rotate(1deg); }
-.tree-c { right: 13%; bottom: 70%; width: 120px; transform: rotate(-1.5deg); }
+.tree-a { left: 26.5%; top: 42.5%; transform: rotate(-1deg); }
+.tree-b { left: 26.5%; top: 53%; transform: rotate(0.4deg); }
+.tree-c { left: 26.5%; top: 62.5%; transform: rotate(-0.5deg); }
 
-/* --- 试写评价面板（右下角打卡框） --- */
+/* --- 试写评价面板（右侧留空区） --- */
 .stage5-check-card {
   position: absolute;
   z-index: 2;
-  right: 3%;
-  bottom: 5%;
-  width: min(30vw, 360px);
+  right: 2.2%;
+  top: 50%;
+  bottom: auto;
+  width: min(36vw, 470px);
   background: #FDFBF2;
   border: 2px dashed #D4CBB3;
   border-radius: 16px;
-  padding: 20px 16px;
+  padding: 24px 18px;
   box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  transform: translateY(-50%) scale(1.02);
+  transform-origin: center right;
 }
 
 /* 胶带装饰 */
@@ -442,7 +418,7 @@ const submitStage5 = async () => {
 }
 
 .group-title {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
   color: #5C8D6D; /* 绿色标题 */
 }
@@ -453,15 +429,15 @@ const submitStage5 = async () => {
   border: 2px solid #E3DBC7;
   border-radius: 10px;
   background: #FAF7EA;
-  padding: 12px 14px;
+  padding: 14px 16px;
   text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   cursor: pointer;
-  min-height: 58px;
-  font-size: 18px;
+  min-height: 66px;
+  font-size: 20px;
   font-weight: 800;
   color: #5A4C43;
   box-shadow: 0 4px 0 #E3DBC7; /* 坚实阴影 */
@@ -471,9 +447,13 @@ const submitStage5 = async () => {
 .check-row.sub {
   margin-left: 8px;
   width: calc(100% - 8px);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  min-height: 52px;
+  min-height: 58px;
+}
+
+.check-row.main {
+  color: #5C8D6D;
 }
 
 /* 选中状态：按压 */
@@ -481,21 +461,21 @@ const submitStage5 = async () => {
   background: #5C8D6D;
   border-color: #3A664A;
   color: #FDFBF2;
-  box-shadow: 0 0 0 #3A664A;
-  transform: translateY(4px);
+  box-shadow: 0 4px 0 #3A664A;
+  transform: none;
 }
 
 /* 勾选框 */
 .square {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border: 2px dashed #D4CBB3;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #5C8D6D;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 900;
   flex-shrink: 0;
   background: transparent;
@@ -521,6 +501,12 @@ const submitStage5 = async () => {
   border-radius: 6px;
 }
 
+.sun-inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.08em;
+}
+
 
 /* ================================================== */
 /*               第二部分：荣誉奖状视图                 */
@@ -528,75 +514,79 @@ const submitStage5 = async () => {
 .certificate-wrap {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 20px;
+  position: relative;
+  isolation: isolate;
   position: relative;
   overflow: hidden;
-  background: transparent; /* 背景继续使用最外层的纸张色 */
+  background: #dff3ff;
 }
 
-/* 奖状外框：精装绘本边缘感 */
-.certificate {
-  width: min(92vw, 860px);
-  position: relative;
+.certificate-scene {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.32) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.02) 100%),
+    url('/final-draft/background.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.certificate-copy {
+  position: absolute;
   z-index: 2;
-  background: #FDFBF2; /* 羊皮纸色 */
-  border-radius: 8px; /* 弱化圆角，更像真实纸张 */
-  padding: 16px;
-  box-shadow: 
-    0 0 0 1px #E3DBC7, 
-    0 18px 40px rgba(90, 76, 67, 0.2);
+  left: 5.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(36vw, 520px);
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 30px rgba(22, 48, 35, 0.16);
+  backdrop-filter: blur(3px);
 }
 
-/* 奖状内页：复古细线框 */
-.cert-inner {
-  position: relative;
-  border: 2px solid #C07953; /* 陶土砖红色复古边框 */
-  outline: 1px solid #C07953;
-  outline-offset: -6px; /* 双层复古线框 */
-  border-radius: 2px;
-  background: #FDFBF2;
-  padding: 40px 30px 34px;
-}
-
-.cert-title {
-  text-align: center;
-  font-size: 48px;
-  font-weight: 900;
-  letter-spacing: 16px;
-  margin-bottom: 30px;
-  color: #B44A30; /* 复古印章红 */
-  text-shadow: 2px 2px 0 rgba(227, 219, 199, 0.8); /* 厚重的排版阴影 */
-}
-
-.cert-body {
-  font-size: 24px;
-  color: #5A4C43;
-  line-height: 2;
-  font-weight: 700;
-}
-
-.cert-body p {
+.cert-main-text {
   margin: 0;
-  text-indent: 0;
-}
-
-.cert-body p.indent-line {
+  color: #274c37;
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.75;
+  font-weight: 800;
+  text-align: left;
   text-indent: 2em;
 }
+
+.certificate-book-area {
+  position: absolute;
+  z-index: 2;
+  right: 7vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(34vw, 500px);
+}
+
+.certificate-book-cover {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  border: 0;
+  background-image: url('/final-draft/book-page.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+
 
 /* 高亮文字：马克笔下划线 */
 .strong-name,
 .strong-num {
   font-weight: 900;
   color: #5C8D6D;
-  padding: 0 6px;
+  padding: 0 2px;
   position: relative;
-  display: inline-block;
+  display: inline;
 }
 .strong-name::after,
 .strong-num::after {
@@ -610,122 +600,6 @@ const submitStage5 = async () => {
   z-index: -1;
   border-radius: 4px;
 }
-
-.badge-title-row {
-  margin-top: 20px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  text-indent: 0;
-}
-
-.badge-title {
-  font-size: 42px;
-  font-weight: 900;
-  color: #D98C3A; /* 暖金橘色 */
-  letter-spacing: 2px;
-  text-shadow: 2px 2px 0 rgba(227, 219, 199, 0.8);
-}
-
-.badge-star {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: #FDFBF2;
-  background: #D98C3A;
-  box-shadow: 2px 2px 0 #A86522; /* 实体阴影 */
-  border: 2px solid #FDFBF2;
-}
-
-.cert-footer {
-  margin-top: 40px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 18px;
-  font-weight: 800;
-  color: #8A7C73;
-}
-
-/* --- 周边装饰：水彩植物风微调 --- */
-.cert-deco {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.leaf {
-  width: 34px;
-  height: 22px;
-  background: #87B392; /* 水彩森绿 */
-  border-radius: 22px 22px 22px 4px;
-  box-shadow: 2px 4px 8px rgba(90, 76, 67, 0.15);
-}
-
-.leaf-a { top: 60px; left: 60px; transform: rotate(-24deg); }
-.leaf-b { right: 50px; top: 80px; transform: rotate(18deg) scale(1.15); }
-.leaf-c { right: 100px; bottom: 70px; transform: rotate(-34deg); }
-
-.flower {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #F6DA73; /* 暖黄 */
-  box-shadow: 0 0 0 4px rgba(246, 218, 115, 0.4);
-}
-
-.flower-a { left: 100px; bottom: 90px; }
-.flower-b { right: 130px; top: 130px; }
-
-.ladybug {
-  width: 18px;
-  height: 18px;
-  right: 70px;
-  bottom: 110px;
-  border-radius: 50%;
-  background: #C75C5C; /* 砖红 */
-  box-shadow: 2px 2px 6px rgba(90, 76, 67, 0.2);
-}
-
-.ladybug::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 1px;
-  width: 2px;
-  height: 16px;
-  background: #3A2D2D;
-}
-
-.ladybug::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 36% 42%, #3A2D2D 0 1.5px, transparent 1.7px),
-    radial-gradient(circle at 65% 30%, #3A2D2D 0 1.4px, transparent 1.6px),
-    radial-gradient(circle at 62% 64%, #3A2D2D 0 1.5px, transparent 1.7px);
-}
-
-/* 四角藤蔓改为复古装饰线 */
-.vine-corner {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  pointer-events: none;
-  border: 3px solid #C07953;
-}
-.vine-tl { top: -6px; left: -6px; border-right: 0; border-bottom: 0; }
-.vine-tr { top: -6px; right: -6px; border-left: 0; border-bottom: 0; }
-.vine-bl { bottom: -6px; left: -6px; border-right: 0; border-top: 0; }
-.vine-br { bottom: -6px; right: -6px; border-left: 0; border-top: 0; }
-
-.vine-corner::after { display: none; } /* 去掉原版的渐变小点 */
 
 
 /* =========== 组件覆盖尺寸 =========== */
@@ -745,15 +619,15 @@ const submitStage5 = async () => {
 
 /* =========== 响应式适配 =========== */
 @media (max-width: 1200px) {
-  .tree-label .title { font-size: 20px; }
-  .tree-label .sub { font-size: 16px; }
-  .stage5-check-card { width: min(29vw, 300px); top: 43%; right: 5.5%; }
-  .tree-a { left: 11%; width: 150px; }
-  .tree-b { left: 39%; width: 150px; }
-  .tree-c { right: 20%; width: 110px; top: 19%; }
-  .cert-title { font-size: 38px; letter-spacing: 10px; }
-  .cert-body { font-size: 20px; }
-  .badge-title { font-size: 32px; }
+  .tree-label { width: 180px; }
+  .tree-label .label-line { font-size: 30px; }
+  .stage5-check-card { width: min(38vw, 430px); right: 1.6%; top: 50%; bottom: auto; transform: translateY(-50%) scale(0.95); }
+  .tree-a { left: 23%; top: 41%; }
+  .tree-b { left: 23%; top: 52.3%; }
+  .tree-c { left: 23%; top: 63.5%; }
+  .certificate-copy { width: min(40vw, 500px); left: 4.8%; }
+  .cert-main-text { font-size: clamp(20px, 2.1vw, 30px); }
+  .certificate-book-area { right: 4vw; width: min(36vw, 460px); }
 }
 
 @media (max-width: 900px) {
@@ -774,26 +648,32 @@ const submitStage5 = async () => {
     width: 92%;
     top: auto;
     bottom: 5%;
+    transform: none;
     padding: 16px;
   }
   .check-row { min-height: 50px; font-size: 16px; }
   .check-row.sub { font-size: 15px; }
   
-  .tree-label .title { font-size: 18px; }
-  .tree-label .sub { font-size: 14px; }
-  .tree-a { left: 7%; bottom: 23%; width: 120px; }
-  .tree-b { left: 34%; bottom: 23%; width: 120px; }
-  .tree-c { right: 10%; top: 17%; width: 90px; }
+  .tree-label .label-line { font-size: 20px; }
+  .tree-a { left: 7%; top: 44%; width: 120px; }
+  .tree-b { left: 7%; top: 53.5%; width: 120px; }
+  .tree-c { left: 7%; top: 63%; width: 120px; }
 
-  .certificate-wrap { padding: 16px; }
-  .certificate { width: min(96vw, 860px); padding: 12px; }
-  .cert-inner { padding: 30px 18px 24px; }
-  .cert-title { font-size: 32px; letter-spacing: 6px; margin-bottom: 20px;}
-  .cert-body { font-size: 18px; }
-  .badge-title-row { gap: 8px; }
-  .badge-title { font-size: 28px; }
-  .badge-star { width: 28px; height: 28px; font-size: 16px; }
-  .cert-footer { font-size: 14px; margin-top: 24px;}
-  .leaf, .flower, .ladybug { transform: scale(0.8); }
+  .certificate-copy {
+    left: 4%;
+    right: 4%;
+    top: 14%;
+    width: auto;
+    transform: none;
+    padding: 14px 14px;
+  }
+  .cert-main-text { font-size: 18px; line-height: 1.65; }
+  .certificate-book-area {
+    right: 4%;
+    top: auto;
+    bottom: 4%;
+    transform: none;
+    width: min(42vw, 300px);
+  }
 }
 </style>

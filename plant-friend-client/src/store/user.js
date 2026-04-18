@@ -21,6 +21,7 @@ export const useUserStore = defineStore('user', {
       studentId: initialState?.studentId || '',
       studentName: initialState?.studentName || '',
       prePlantPhotos: [],
+      preRecordCard: initialState?.preRecordCard || '',
       stage1Stars: initialState?.stage1Stars ?? 1,
       stage3Stars: initialState?.stage3Stars ?? 0,
       currentStage: initialState?.currentStage || '0',
@@ -61,6 +62,7 @@ export const useUserStore = defineStore('user', {
       this.studentId = data.student_id;
       this.studentName = data.student_name;
       this.prePlantPhotos = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3].map((v) => toDisplayImageUrl(v)).filter(Boolean);
+      this.preRecordCard = toDisplayImageUrl(data.pre_record_card || '');
       this.currentStage = 'welcome';
       this.saveToStorage();
       this.syncCurrentStage('welcome');
@@ -81,6 +83,7 @@ export const useUserStore = defineStore('user', {
       this.studentId = '';
       this.studentName = '';
       this.prePlantPhotos = [];
+      this.preRecordCard = '';
       this.stage1Stars = 1;
       this.stage3Stars = 0;
       this.currentStage = '0';
@@ -99,6 +102,7 @@ export const useUserStore = defineStore('user', {
         if (res.data?.status === 'success') {
           const data = res.data.data;
           this.prePlantPhotos = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3].map((v) => toDisplayImageUrl(v)).filter(Boolean);
+          this.preRecordCard = toDisplayImageUrl(data.pre_record_card || '');
         }
       } catch (err) {
         console.warn('Failed to restore plant photos:', err);
@@ -109,6 +113,7 @@ export const useUserStore = defineStore('user', {
       const stateToSave = {
         studentId: this.studentId,
         studentName: this.studentName,
+        preRecordCard: this.preRecordCard,
         stage1Stars: this.stage1Stars,
         stage3Stars: this.stage3Stars,
         currentStage: this.currentStage,

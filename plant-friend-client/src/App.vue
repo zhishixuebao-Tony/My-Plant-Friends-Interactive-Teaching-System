@@ -6,7 +6,7 @@
 
       <template v-else>
         <!-- 顶部导航栏，测试开启，使用关闭 -->
-         
+        
         <div v-if="showStudentStageNav" class="student-stage-nav">
           <button
             v-for="item in stageNavItems"
@@ -287,6 +287,10 @@ body {
   padding: 60px;
   text-align: center;
   font-size: 18px;
+}
+
+.van-image-preview__close-icon {
+  font-size: 48px !important;
 }
 
 @media (max-width: 1024px) and (min-height: 600px) {

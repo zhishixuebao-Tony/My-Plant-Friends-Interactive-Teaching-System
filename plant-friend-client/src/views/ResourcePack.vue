@@ -58,10 +58,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { useUserStore } from '../store/user';
-import { showConfirmDialog, showImagePreview, showToast } from 'vant';
+import { showImagePreview, showToast } from 'vant';
 import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
@@ -98,6 +98,7 @@ const resourcePacks = ref([
     prompt: '我已经想好了“先写什么再写什么”，该怎么连起来呢？',
     imageName: '有序描写步骤',
     imageUrl: '/resources/orderly.jpg',
+    previewUrl: '/resources/orderly.jpg',
   },
   {
     id: 'feeling',
@@ -105,6 +106,7 @@ const resourcePacks = ref([
     prompt: '我记录了很多的发现，该怎么合起来写呢？',
     imageName: '情感表达方法',
     imageUrl: '/resources/feeling.jpg',
+    previewUrl: '/resources/feeling.jpg',
   },
   {
     id: 'vocabulary',
@@ -112,12 +114,43 @@ const resourcePacks = ref([
     prompt: '我想把植物朋友写清楚，可以用上哪些优美生动的词句呢？',
     imageName: '词句积累',
     imageUrl: '/resources/vocabulary.jpg',
+    previewUrl: '/resources/vocabulary.jpg',
   },
 ]);
 
+const previewBlobUrls = new Map();
+
+const warmResourcePackImages = async () => {
+  await Promise.all(
+    resourcePacks.value.map(async (pack) => {
+      try {
+        const res = await fetch(pack.imageUrl, { cache: 'force-cache' });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const oldUrl = previewBlobUrls.get(pack.id);
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
+        previewBlobUrls.set(pack.id, blobUrl);
+        pack.previewUrl = blobUrl;
+      } catch (_) {
+        pack.previewUrl = pack.imageUrl;
+      }
+    })
+  );
+};
+
+onMounted(() => {
+  warmResourcePackImages();
+});
+
+onBeforeUnmount(() => {
+  previewBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+  previewBlobUrls.clear();
+});
+
 const onPreview = async (pack) => {
   showImagePreview({
-    images: [pack.imageUrl],
+    images: [pack.previewUrl || pack.imageUrl],
     startPosition: 0,
     closeable: true,
     closeOnClickOverlay: true,
@@ -134,22 +167,11 @@ const onPreview = async (pack) => {
 
 const submitStage4 = async () => {
   if (!canGoNext.value) return;
-  try {
-    await showConfirmDialog({
-      title: '确认进入下一步',
-      message: '确认已完成资源包学习并进入下一环节吗？',
-      confirmButtonText: '确认进入',
-      cancelButtonText: '返回查看',
-    });
-  } catch (_) {
-    return;
-  }
 
   loading.value = true;
   try {
     await axios.post('/api/student/stage4/complete-resources', { student_id: userStore.studentId });
     userStore.setStage('5');
-    showToast({ message: '资源包学习完成', type: 'success' });
   } catch (error) {
     console.error(error);
     showToast('提交失败，请重试');
@@ -331,12 +353,6 @@ const submitStage4 = async () => {
 .plant-photo-btn:nth-child(1) { transform: rotate(-2deg); }
 .plant-photo-btn:nth-child(2) { transform: rotate(1deg); }
 .plant-photo-btn:nth-child(3) { transform: rotate(-1.5deg); }
-
-.plant-photo-btn:hover {
-  transform: translateY(-6px) rotate(0deg);
-  box-shadow: 4px 12px 24px rgba(90, 76, 67, 0.18);
-  z-index: 2;
-}
 
 .plant-photo-image {
   width: 100%;

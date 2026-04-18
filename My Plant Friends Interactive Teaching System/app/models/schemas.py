@@ -10,10 +10,10 @@ class StudentProfile(BaseModel):
     is_logged_in: bool = False
     current_stage: str = "0"
 
-    pre_record_card: Optional[str] = None
     pre_plant_1: Optional[str] = None
     pre_plant_2: Optional[str] = None
     pre_plant_3: Optional[str] = None
+    pre_record_card: Optional[str] = None
 
     sensory_evaluations: List[str] = Field(default_factory=list)
     dimension_evaluations: List[str] = Field(default_factory=list)

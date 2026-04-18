@@ -9,18 +9,15 @@
       </div>
 
       <div class="right-area">
-        <div class="school-badge"></div>
-
         <div class="encouragement-box">
-          <div class="encouragement-title">观察小达人</div>
           <div class="encouragement-content">
-            <p>你在观察环节用了这些方法：</p>
+            <p>为了了解植物朋友，你用了这些方法：</p>
             <div class="selected-methods">
               <span v-for="(method, index) in displayMethods" :key="index" class="method-item">
                 {{ method }}
               </span>
             </div>
-            <p class="stars-reward">本环节奖励你 <span class="star-count">1</span> 个太阳☀</p>
+            <p class="stars-reward">获得1缕阳光 <img src="/sun.svg" alt="" class="sun-inline-icon" /></p>
           </div>
         </div>
       </div>
@@ -209,6 +206,12 @@ const goNext = () => {
   color: #ff6600;
   font-weight: 900;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sun-inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.08em;
 }
 
 .grass-btn {

@@ -16,7 +16,7 @@ def clear_process_media_files() -> int:
     """
     Delete only classroom process images in local_media:
     - delete: record_card.*, draft.*, final.*
-    - keep:   pre_record_card.*, pre_plant_1/2/3.*
+    - keep:   pre_plant_1/2/3.*
     """
     if not LOCAL_MEDIA_DIR.exists():
         return 0
@@ -47,7 +47,7 @@ async def reset_class_data() -> None:
 
     Keep:
     - student_id, student_name
-    - pre_record_card, pre_plant_1, pre_plant_2, pre_plant_3
+    - pre_plant_1, pre_plant_2, pre_plant_3
     - admin_config
 
     Reset:

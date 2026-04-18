@@ -10,12 +10,9 @@ MONGO_DETAILS = "mongodb://localhost:27017"
 DB_NAME = "composition_db"
 LOCAL_MEDIA_DIR = Path(__file__).resolve().parent / "local_media"
 
-PRE_FIELDS = ["pre_record_card", "pre_plant_1", "pre_plant_2", "pre_plant_3"]
+PRE_FIELDS = ["pre_plant_1", "pre_plant_2", "pre_plant_3", "pre_record_card"]
 WINDOWS_INVALID_CHARS_RE = re.compile(r'[\\/:*?"<>|]+')
 SAFE_ID_RE = re.compile(r"[^a-zA-Z0-9_-]+")
-
-JUDGE_START_ID = 51
-JUDGE_COUNT = 20
 
 
 def safe_student_id(raw: str) -> str:
@@ -37,16 +34,8 @@ def sid_query_values(sid_text: str) -> list:
     return [sid, str(int(sid)), int(sid)]
 
 
-def is_judge_id(raw_student_id: str) -> bool:
-    sid = str(raw_student_id or "").strip()
-    if not sid.isdigit():
-        return False
-    value = int(sid)
-    return 51 <= value <= 70
-
-
 def is_non_judge_sid(sid: str) -> bool:
-    return sid.isdigit() and int(sid) < JUDGE_START_ID
+    return sid.isdigit() and int(sid) < 51
 
 
 def default_student_doc(student_id: str, student_name: str) -> dict:
@@ -66,15 +55,11 @@ def default_student_doc(student_id: str, student_name: str) -> dict:
         "total_stars": 0,
         "has_claimed_certificate": False,
         "last_active_time": None,
-        "pre_record_card": "",
         "pre_plant_1": "",
         "pre_plant_2": "",
         "pre_plant_3": "",
+        "pre_record_card": "",
     }
-
-
-def judge_default_doc(judge_id: str, judge_name: str) -> dict:
-    return default_student_doc(judge_id, judge_name)
 
 
 def student_folder(student_id: str, student_name: str) -> str:
@@ -136,43 +121,6 @@ async def load_non_judge_map(db) -> dict[str, dict]:
     return result
 
 
-def has_pre_media(doc: dict) -> bool:
-    return any(str(doc.get(k) or "").strip() for k in PRE_FIELDS)
-
-
-async def sync_judge_slots(db, source_docs: list[dict], dry_run: bool) -> int:
-    if not source_docs:
-        print("[WARN] No source students with pre-media; judge slots not updated.")
-        return 0
-
-    synced = 0
-    for idx in range(JUDGE_COUNT):
-        source = source_docs[idx % len(source_docs)]
-        source_name = str(source.get("student_name") or "").strip() or f"Student{idx + 1}"
-        judge_sid = str(JUDGE_START_ID + idx).zfill(2)
-        judge_name = f"Judge{idx + 1} ({source_name})"
-
-        payload = {"student_name": judge_name, **{k: source.get(k, "") for k in PRE_FIELDS}}
-        defaults = judge_default_doc(judge_sid, judge_name)
-        defaults.pop("student_name", None)
-        for key in PRE_FIELDS:
-            defaults.pop(key, None)
-
-        if dry_run:
-            print(f"[JUDGE SYNC] {judge_sid} <= {sid_norm(source.get('student_id', ''))}")
-            synced += 1
-            continue
-
-        await db.students.update_one(
-            {"student_id": {"$in": sid_query_values(judge_sid)}},
-            {"$set": payload, "$setOnInsert": defaults},
-            upsert=True,
-        )
-        synced += 1
-
-    return synced
-
-
 async def rebuild(dry_run: bool, sync_student_names: bool, student_max: int | None) -> None:
     client = AsyncIOMotorClient(MONGO_DETAILS)
     db = client[DB_NAME]
@@ -190,8 +138,6 @@ async def rebuild(dry_run: bool, sync_student_names: bool, student_max: int | No
     found_files = 0
     missing_files = 0
 
-    source_docs_for_judge = []
-
     for sid_int in range(1, max_sid + 1):
         sid = str(sid_int).zfill(2)
         current = non_judge_map.get(sid)
@@ -200,7 +146,7 @@ async def rebuild(dry_run: bool, sync_student_names: bool, student_max: int | No
 
         # Name policy:
         # - If local folder exists, use local folder name.
-        # - If local folder is missing, always use placeholder "学生+学号".
+        # - If local folder is missing, use placeholder "学生+学号".
         target_name = local_name or f"学生{sid_int}"
 
         changes = {}
@@ -246,22 +192,11 @@ async def rebuild(dry_run: bool, sync_student_names: bool, student_max: int | No
                 await db.students.update_many({"student_id": {"$in": sid_query_values(sid)}}, {"$set": changes})
             updated_docs += 1
 
-        if has_pre_media(final_doc):
-            source_docs_for_judge.append({
-                "student_id": sid,
-                "student_name": final_doc.get("student_name", target_name),
-                **{k: final_doc.get(k, "") for k in PRE_FIELDS},
-            })
-
-    source_docs_for_judge.sort(key=lambda d: int(sid_norm(d.get("student_id", "0"))))
-    judge_synced = await sync_judge_slots(db=db, source_docs=source_docs_for_judge, dry_run=dry_run)
-
     print("==== Rebuild Summary ====")
     print(f"Total non-judge slots (01..{str(max_sid).zfill(2)}): {max_sid}")
     print(f"Updated/inserted documents: {updated_docs}")
     print(f"Inserted missing slots: {inserted_slots}")
     print(f"Renamed students from local folders: {renamed_students}")
-    print(f"Judge slots synced: {judge_synced}")
     print(f"Found local pre-files: {found_files}")
     print(f"Missing pre-files: {missing_files}")
     print(f"Dry run: {dry_run}")
@@ -275,6 +210,7 @@ def main():
     parser = argparse.ArgumentParser(description="Rebuild pre media URLs from local_media folder structure.")
     parser.add_argument("--dry-run", action="store_true", help="Preview without writing DB.")
     parser.add_argument("--sync-student-names", action="store_true", help="Sync student_name from local_media folder names.")
+    parser.add_argument("--clear-missing", action="store_true", help="Deprecated. Missing pre_* files are always cleared.")
     parser.add_argument("--student-max", type=int, default=None, help="Force non-judge slots range 01..N.")
     args = parser.parse_args()
 

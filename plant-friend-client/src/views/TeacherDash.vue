@@ -17,7 +17,13 @@
           <div class="id-tag">{{ student.student_id }}</div>
           <div class="name-text">{{ student.student_name || '未登录' }}</div>
           <div v-if="shouldShowStars(student)" class="star-row">
-            {{ formatStars(getFinalStars(student)) }}
+            <img
+              v-for="idx in getFinalStars(student)"
+              :key="`${student.student_id}-sun-${idx}`"
+              src="/sun.svg"
+              alt=""
+              class="sun-inline-icon"
+            />
           </div>
         </div>
       </div>
@@ -128,12 +134,12 @@
             <div v-else class="empty-text">该生暂无植物照片</div>
           </div>
 
-          <div class="module-title module-gap">获得太阳情况</div>
+          <div class="module-title module-gap">获得阳光情况</div>
           <div class="star-detail-box">
             <div class="star-stage-item">
               <div class="star-stage-head">
                 <span class="stage-name">了解环节</span>
-                <span class="stage-stars">{{ Number(activeData.stage1_stars || 0) }} ☀</span>
+                <span class="stage-stars">{{ Number(activeData.stage1_stars || 0) }} <img src="/sun.svg" alt="" class="sun-inline-icon" /></span>
               </div>
               <div class="stage-selection">
                 {{ formatSelectionList(activeData.sensory_evaluations, 'sensory', '未选择观察方法') }}
@@ -143,7 +149,7 @@
             <div class="star-stage-item">
               <div class="star-stage-head">
                 <span class="stage-name">记录环节</span>
-                <span class="stage-stars">{{ Number(activeData.stage3_stars || 0) }} ☀</span>
+                <span class="stage-stars">{{ Number(activeData.stage3_stars || 0) }} <img src="/sun.svg" alt="" class="sun-inline-icon" /></span>
               </div>
               <div class="stage-selection">
                 {{ formatSelectionList(activeData.dimension_evaluations, 'dimension', '未选择新发现选项') }}
@@ -153,7 +159,7 @@
             <div class="star-stage-item">
               <div class="star-stage-head">
                 <span class="stage-name">试写环节</span>
-                <span class="stage-stars">{{ Number(activeData.stage5_stars || 0) }} ☀</span>
+                <span class="stage-stars">{{ Number(activeData.stage5_stars || 0) }} <img src="/sun.svg" alt="" class="sun-inline-icon" /></span>
               </div>
               <div class="stage-selection">
                 {{ formatSelectionList(activeData.stage5_checks, 'writing', '未勾选试写表现') }}
@@ -162,7 +168,7 @@
 
             <div class="star-total-row">
               <span>总计</span>
-              <span class="total-stars">{{ Number(activeData.total_stars || 0) }} ☀</span>
+              <span class="total-stars">{{ Number(activeData.total_stars || 0) }} <img src="/sun.svg" alt="" class="sun-inline-icon" /></span>
             </div>
           </div>
         </div>
@@ -327,11 +333,6 @@ const shouldShowStars = (student) => {
   if (!student) return false;
   const claimed = Boolean(student.has_claimed_certificate);
   return claimed && getFinalStars(student) > 0;
-};
-
-const formatStars = (count) => {
-  const n = Math.max(0, Number(count) || 0);
-  return n > 0 ? `☀`.repeat(n) : '';
 };
 
 // --- 名单弹窗映射 ---
@@ -571,16 +572,17 @@ const updateCharts = () => {
   }
 
   if (activeAnalysis.value === 'resource') {
+    const rankedResourceRows = [...resourceRows].sort((a, b) => getResourceCount(b.key) - getResourceCount(a.key));
     activeChart.setOption({
     title: { text: '资源包热度排行', textStyle: { fontSize: 14, color: '#666' }, left: 'center' },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     color: ['#f2bd27'],
     grid: { left: '3%', right: '24%', bottom: '3%', containLabel: true },
     xAxis: { type: 'value', minInterval: 1 },
-    yAxis: { type: 'category', inverse: true, data: resourceRows.map(r => r.label), axisLabel: { width: 140, overflow: 'truncate' } },
+    yAxis: { type: 'category', inverse: true, data: rankedResourceRows.map(r => r.label), axisLabel: { width: 140, overflow: 'truncate' } },
     series: [{
       type: 'bar',
-      data: resourceRows.map((r) => ({
+      data: rankedResourceRows.map((r) => ({
         key: r.key,
         value: getResourceCount(r.key),
         userCount: getResourceUserCount(r.key),
@@ -673,7 +675,7 @@ watch(activeChartRef, (el) => {
 onMounted(() => {
   fetchDashboardData();
   initWebSocket();
-  pollTimer = setInterval(fetchDashboardData, 60000);
+  pollTimer = setInterval(fetchDashboardData, 30000);
 
   nextTick(() => {
     initCharts();
@@ -858,10 +860,6 @@ onUnmounted(() => {
   cursor: pointer; 
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.student-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-}
 .student-card:active { 
   transform: scale(0.96); 
 }
@@ -902,11 +900,16 @@ onUnmounted(() => {
 
 .star-row { 
   margin-top: 6px; 
-  font-size: 13px; 
-  line-height: 1; 
-  letter-spacing: 1px; 
-  color: #F59E0B; 
-  text-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sun-inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.08em;
 }
 
 
@@ -978,11 +981,6 @@ onUnmounted(() => {
   transition: all 0.15s ease;
   opacity: 0;
   animation: statRowIn 0.8s ease forwards;
-}
-.stat-row:hover { 
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
 }
 .stat-row:active { transform: scale(0.98); }
 
@@ -1069,7 +1067,6 @@ onUnmounted(() => {
   cursor: pointer; 
   transition: transform 0.2s;
 }
-.p-img:hover { transform: scale(1.02); }
 .empty-text { font-size: 14px; color: #94A3B8; text-align: center; padding: 24px; font-weight: 700;}
 
 .star-detail-box { 
@@ -1128,7 +1125,6 @@ onUnmounted(() => {
   padding: 4px; 
 }
 .selection-grid .student-card { height: 80px; cursor: default; }
-.selection-grid .student-card:hover { transform: none; box-shadow: 0 2px 6px rgba(162, 216, 182, 0.2); }
 .selection-grid .id-tag { top: 6px; left: 8px; font-size: 13px; }
 .selection-grid .name-text { font-size: 16px; font-weight: 800; }
 
@@ -1136,3 +1132,4 @@ onUnmounted(() => {
   .selection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } 
 }
 </style>
+

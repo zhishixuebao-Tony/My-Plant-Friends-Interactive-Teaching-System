@@ -79,7 +79,7 @@ const onNextStep = async () => {
     await submitSensoryApi(userStore.studentId, checkedItems.value);
     userStore.setSensorySelections(checkedItems.value);
     userStore.setStage('sensory-transition');
-    showToast({ message: '观察记录成功', type: 'success' });
+    showToast({ message: '提交成功', type: 'success' });
   } catch (error) {
     console.error(error);
     showToast('提交失败，请重试');
@@ -181,7 +181,7 @@ const onNextStep = async () => {
   box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
   width: min(96%, 1220px);
   max-height: 100%;
-  overflow-y: auto;
+  overflow: visible;
   position: relative; /* 为伪元素胶带定位 */
 }
 
@@ -189,15 +189,15 @@ const onNextStep = async () => {
 .evaluate-panel::before {
   content: '';
   position: absolute;
-  top: -10px;
+  top: -14px;
   left: 50%;
-  transform: translateX(-50%) rotate(1deg);
-  width: 120px;
-  height: 24px;
-  background-color: rgba(135, 179, 146, 0.6);
-  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
-  border-radius: 2px;
-  z-index: 10;
+  transform: translateX(-50%) rotate(-2.5deg);
+  width: 112px;
+  height: 26px;
+  background: rgba(215, 202, 171, 0.8);
+  box-shadow: 0 1px 3px rgba(85, 70, 45, 0.14);
+  border-radius: 1px;
+  z-index: 8;
 }
 
 .panel-header {
@@ -258,8 +258,8 @@ const onNextStep = async () => {
 .option-card.active {
   background: #5C8D6D;
   border-color: #3A664A;
-  transform: translateY(6px); /* 按下去 */
-  box-shadow: 0 0 0 #3A664A; /* 阴影消失 */
+  box-shadow: 0 6px 0 #3A664A; /* 保持高度感，避免容器视觉缩小 */
+  transform: none;
 }
 
 .option-text {
@@ -346,10 +346,6 @@ const onNextStep = async () => {
     box-shadow: 0 4px 0 #E3DBC7;
   }
   
-  .option-card.active {
-    transform: translateY(4px);
-  }
-
   .option-text {
     font-size: 19px;
   }

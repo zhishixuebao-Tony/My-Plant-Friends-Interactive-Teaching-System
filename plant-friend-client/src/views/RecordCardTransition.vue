@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="welcome-page">
     <div class="scene-overlay">
       <div class="book-area">
@@ -9,8 +9,6 @@
       </div>
 
       <div class="right-area">
-        <div class="school-badge"></div>
-
         <div class="encouragement-box">
           <div class="encouragement-title">{{ pageTitle }}</div>
           <div class="encouragement-content">
@@ -20,8 +18,8 @@
                 {{ selection }}
               </span>
             </div>
-            <p class="stars-info">{{ starsMessageFinal }}</p>
-            <p v-if="starsEarned > 0" class="stars-reward">本环节奖励你 <span class="star-count">{{ starsEarned }}</span> 个太阳☀</p>
+            <p v-if="starsMessageFinal" class="stars-info">{{ starsMessageFinal }}</p>
+            <p v-if="starsEarned > 0" class="stars-reward">{{ rewardText }} <img src="/sun.svg" alt="" class="sun-inline-icon" /></p>
             <p v-else class="no-stars-message">你的认真记录同样值得表扬！</p>
           </div>
         </div>
@@ -45,12 +43,24 @@ const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.
 
 const displaySelections = computed(() => {
   const selections = userStore.dimensionSelections || [];
-  return selections.map(selection => {
-    if (selection.includes('暂时没有新的发现')) {
+  return selections.map((selectionRaw) => {
+    const selection = String(selectionRaw || '');
+    if (selection.includes('暂时没有')) {
       return '暂时没有新的发现';
-    } else if (selection.includes('（1）有以前没观察到的')) {
+    }
+    if (
+      selection.includes('(1)') ||
+      selection.includes('（1）') ||
+      selection.includes('有以前没观察到')
+    ) {
       return '有以前没观察到的';
-    } else if (selection.includes('（2）观察后，有了点儿感受')) {
+    }
+    if (
+      selection.includes('(2)') ||
+      selection.includes('（2）') ||
+      selection.includes('观察后') ||
+      selection.includes('感受')
+    ) {
       return '观察后，有了点儿感受';
     }
     return selection;
@@ -59,48 +69,33 @@ const displaySelections = computed(() => {
 
 const starsEarned = computed(() => {
   const selections = userStore.dimensionSelections || [];
-  const hasDiscovery = selections.some(
-    (selection) =>
-      selection.includes('（1）')
-      || selection.includes('(1)')
-      || selection.includes('（2）')
-      || selection.includes('(2)')
-  );
-  if (hasDiscovery) return 1;
-
-  let stars = 0;
-  selections.forEach(selection => {
-    if (selection.includes('（1）有以前没观察到的')) {
-      stars += 1;
-    } else if (selection.includes('（2）观察后，有了点儿感受')) {
-      stars += 1;
-    }
-  });
-  return stars;
+  return selections.length > 0 ? 1 : 0;
 });
 
+const hasNoNewDiscovery = computed(() =>
+  displaySelections.value.some((s) => s.includes('暂时没有新的发现'))
+);
+
 const pageTitle = computed(() => {
-  const hasNoNewDiscovery = displaySelections.value.some(s => s.includes('暂时没有新的发现'));
-  return hasNoNewDiscovery ? '认真记录，继续加油' : '记录小能手';
+  return '';
 });
 
 const encouragementText = computed(() => {
-  const hasNoNewDiscovery = displaySelections.value.some(s => s.includes('暂时没有新的发现'));
-  if (hasNoNewDiscovery) {
-    return '你认真地完成了记录卡，并且诚实表达了"暂时没有新的发现"。这份认真很棒！';
-  } else {
-    return '你在记录卡环节有了这些新发现：';
+  if (hasNoNewDiscovery.value) {
+    return '你认真地完成了记录卡，并诚实选择了：';
   }
+  return '再次和植物朋友见面，你有了这些发现：';
 });
+
+const rewardText = computed(() =>
+  hasNoNewDiscovery.value ? '同样值得表扬！获得一缕阳光' : '获得1缕阳光'
+);
 
 const starsMessage = computed(() => {
   if (starsEarned.value === 0) {
     return '我们到下一个环节继续探索吧。';
-  } else if (starsEarned.value === 1) {
-    return '你有了新发现，真棒！';
-  } else {
-    return '你发现了这么多，真是观察小能手！';
   }
+  return '';
 });
 
 const starsEarnedFinal = computed(() => starsEarned.value);
@@ -179,24 +174,6 @@ const goNext = () => {
   align-items: center;
 }
 
-.school-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 2px solid #eef2f8;
-  background-image: url('/welcome/school-badge.png');
-  background-position: center 60%;
-  background-size: 78% auto;
-  background-repeat: no-repeat;
-  background-color: #ffffff;
-  box-shadow:
-    0 8px 18px rgba(12, 52, 28, 0.2),
-    0 0 0 2px rgba(255, 255, 255, 0.95);
-}
-
 .encouragement-box {
   margin-top: 15vh;
   width: min(100%, 1000px);
@@ -258,6 +235,12 @@ const goNext = () => {
   font-weight: 700;
   margin: 24px 0;
   font-style: italic;
+}
+
+.sun-inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.08em;
 }
 
 .star-count {
@@ -355,3 +338,4 @@ const goNext = () => {
   }
 }
 </style>
+

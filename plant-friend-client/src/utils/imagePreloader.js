@@ -1,4 +1,4 @@
-import { toDisplayImageUrl } from './imageProxy';
+﻿import { toDisplayImageUrl } from './imageProxy';
 
 const loadedUrls = new Set();
 const loadingUrls = new Set();
@@ -12,7 +12,8 @@ const STUDENT_WELCOME_CRITICAL_URLS = [
   '/welcome/course-title.png',
 ];
 
-const STUDENT_POST_WELCOME_IMAGE_URLS = [
+const STUDENT_FRONTEND_STATIC_IMAGE_URLS = [
+  ...STUDENT_WELCOME_CRITICAL_URLS,
   '/transition-pages/sensory-transition/background.jpg',
   '/transition-pages/sensory-transition/book-page.png',
   '/transition-pages/recordcard-transition/background.jpg',
@@ -23,8 +24,19 @@ const STUDENT_POST_WELCOME_IMAGE_URLS = [
   '/ViewRecordCards/RecordCard1.png',
   '/ViewRecordCards/RecordCard2.png',
   '/ViewRecordCards/RecordCard3.png',
+  '/ViewRecordCards/RecordCard4.png',
   '/final-draft/three-trees.jpg',
+  '/final-draft/background.jpg',
+  '/final-draft/book-page.png',
+  '/sun.svg',
+  '/icons.svg',
+  '/favicon.svg',
+  '/favicon1.svg',
 ];
+
+const STUDENT_POST_WELCOME_IMAGE_URLS = STUDENT_FRONTEND_STATIC_IMAGE_URLS.filter(
+  (url) => !STUDENT_WELCOME_CRITICAL_URLS.includes(url)
+);
 
 const toSafeUrl = (url) => {
   const raw = String(url || '').trim();
@@ -34,10 +46,10 @@ const toSafeUrl = (url) => {
 
 const collectStudentDynamicUrls = (studentData = {}) => {
   return [
-    studentData.pre_record_card,
     studentData.pre_plant_1,
     studentData.pre_plant_2,
     studentData.pre_plant_3,
+    studentData.pre_record_card,
   ]
     .map(toSafeUrl)
     .filter(Boolean);
@@ -92,26 +104,20 @@ export const scheduleStudentPreloadAfterWelcome = (studentData, options = {}) =>
   if (scheduledStudentPreloadIds.has(sid)) return;
   scheduledStudentPreloadIds.add(sid);
 
-  const delayMs = Math.max(0, Number(options.delayMs) || 900);
+  const delayMs = Math.max(0, Number(options.delayMs) || 120);
   const task = async () => {
     const urls = [
       ...STUDENT_POST_WELCOME_IMAGE_URLS,
       ...collectStudentDynamicUrls(studentData),
     ];
     try {
-      await preloadImages(urls, { concurrency: 3 });
+      await preloadImages(urls, { concurrency: 6 });
     } catch (_) {
       // Keep preload best-effort and non-blocking.
     }
   };
 
   window.setTimeout(() => {
-    if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(() => {
-        task();
-      }, { timeout: 1500 });
-      return;
-    }
     task();
   }, delayMs);
 };
@@ -121,3 +127,4 @@ export const preloadTeacherAllImages = async (students = []) => {
   const urls = [...STUDENT_WELCOME_CRITICAL_URLS, ...STUDENT_POST_WELCOME_IMAGE_URLS, ...dynamicUrls];
   await preloadImages(urls, { concurrency: 10 });
 };
+

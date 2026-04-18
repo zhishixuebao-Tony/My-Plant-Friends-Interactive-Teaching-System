@@ -28,7 +28,7 @@
       title="身份确认"
       show-cancel-button
       confirm-button-text="是我，开始学习"
-      cancel-button-text="重新输入"
+      cancel-button-text="重新选择"
       @confirm="onFinalConfirm"
       class="handbook-dialog"
     >
@@ -147,10 +147,11 @@ const onFinalConfirm = () => {
     pre_plant_1: studentFullData.value.pre_plant_1,
     pre_plant_2: studentFullData.value.pre_plant_2,
     pre_plant_3: studentFullData.value.pre_plant_3,
+    pre_record_card: studentFullData.value.pre_record_card,
   });
 
   userStore.setStage('welcome');
-  scheduleStudentPreloadAfterWelcome(studentFullData.value, { delayMs: 900 });
+  scheduleStudentPreloadAfterWelcome(studentFullData.value, { delayMs: 120 });
   window.dispatchEvent(new Event('student-login-success'));
   showToast('登录成功');
 };

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="stage-container">
     <div class="top-nav">
       <span class="top-nav-spacer" aria-hidden="true"></span>
@@ -17,9 +17,16 @@
     </div>
 
     <div v-if="isPhotoPage" class="stage-body photo-page">
-      <section class="photo-panel">
+      <section class="photo-panel" :class="{ 'photo-panel--judge': hasJudgePreRecord }">
         <div class="photo-hint">再次走近自己的植物朋友，也许你会有新的发现，把你的新发现补充在记录卡上。</div>
-        <div v-if="prePlantPhotos.length" class="photo-grid">
+        <div
+          v-if="prePlantPhotos.length"
+          class="photo-grid"
+          :class="[
+            `photo-grid-count-${Math.min(prePlantPhotos.length, 3)}`,
+            { 'photo-grid--judge': hasJudgePreRecord },
+          ]"
+        >
           <button
             v-for="(img, idx) in prePlantPhotos"
             :key="idx"
@@ -30,7 +37,21 @@
             <van-image :src="img" fit="cover" radius="4" class="plant-img" />
           </button>
         </div>
-        <div v-else class="empty-tip">暂无植物照片</div>
+        <div v-if="isJudgeLogin && preRecordCardUrls.length" class="pre-record-section">
+          <div class="pre-record-title">记录卡</div>
+          <div class="pre-record-grid">
+            <button
+              v-for="(url, idx) in preRecordCardUrls"
+              :key="`pre-record-${idx}`"
+              type="button"
+              class="pre-record-btn"
+              @click="openRecordCardPreview(idx)"
+            >
+              <van-image :src="url" fit="cover" radius="4" class="pre-record-img" />
+            </button>
+          </div>
+        </div>
+        <div v-if="!prePlantPhotos.length" class="empty-tip">暂无植物照片</div>
       </section>
     </div>
 
@@ -38,6 +59,7 @@
       <section class="evaluate-panel">
         <header class="level-1-title">再次观察，我有没有新的发现呢？</header>
         <div class="eval-box">
+          <div class="discovery-group">
           <div class="level-2-title">我已经有了新的发现：</div>
 
           <button
@@ -58,13 +80,16 @@
             :disabled="groupDisabled"
             @click="toggleFeeling"
           >
-            <span>（2）观察后，有了点儿感受（身体感觉 心里想法）</span>
+            <span>（2）观察后，有了点儿感受（身体感觉/心里想法）</span>
             <span class="square" :class="{ checked: hasFeeling }">{{ hasFeeling ? '✓' : '' }}</span>
           </button>
 
+          </div>
+
+          <div class="no-discovery-group">
           <button
             type="button"
-            class="check-row level-2-row"
+            class="check-row level-2-row no-discovery-row"
             :class="{ active: noNewFinding, disabled: noNewDisabled }"
             :disabled="noNewDisabled"
             @click="toggleNoNew"
@@ -72,6 +97,7 @@
             <span>我暂时没有新的发现。</span>
             <span class="square" :class="{ checked: noNewFinding }">{{ noNewFinding ? '✓' : '' }}</span>
           </button>
+          </div>
         </div>
       </section>
     </div>
@@ -91,24 +117,31 @@ const userStore = useUserStore();
 const isSubmitting = ref(false);
 const currentPage = ref(1);
 const prePlantPhotos = ref([]);
+const preRecordCardUrls = ref([]);
 
 const noNewFinding = ref(false);
 const hasUnseen = ref(false);
 const hasFeeling = ref(false);
 const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.recordCard));
 
+const isJudgeLogin = computed(() => {
+  const sid = Number(String(userStore.studentId || '').trim());
+  return Number.isFinite(sid) && sid >= 51 && sid <= 70;
+});
+
 const isPhotoPage = computed(() => currentPage.value === 1);
 const groupDisabled = computed(() => noNewFinding.value);
 const noNewDisabled = computed(() => hasUnseen.value || hasFeeling.value);
+const hasJudgePreRecord = computed(() => isJudgeLogin.value && preRecordCardUrls.value.length > 0);
 
 const selectedChecks = computed(() => {
   const checks = [];
   if (noNewFinding.value) {
-    checks.push('我暂时没有新的发现');
+    checks.push('我暂时没有新的发现。');
     return checks;
   }
   if (hasUnseen.value) checks.push('我已经有了新的发现：（1）有以前没观察到的');
-  if (hasFeeling.value) checks.push('我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉 心里想法）');
+  if (hasFeeling.value) checks.push('我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉/心里想法）');
   return checks;
 });
 
@@ -138,14 +171,17 @@ const toggleFeeling = () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get(`/api/teacher/dashboard/student-detail/${userStore.studentId}`);
+    const response = await axios.get(`/api/student/info/${userStore.studentId}`);
     const data = response.data || {};
     const photosFromApi = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3]
       .map((v) => toDisplayImageUrl(v))
       .filter(Boolean);
+    const recordCardUrl = toDisplayImageUrl(data.pre_record_card || '');
+    preRecordCardUrls.value = recordCardUrl ? [recordCardUrl] : [];
     prePlantPhotos.value = photosFromApi.length ? photosFromApi : userStore.prePlantPhotos || [];
   } catch (error) {
     prePlantPhotos.value = userStore.prePlantPhotos || [];
+    preRecordCardUrls.value = userStore.preRecordCard ? [userStore.preRecordCard] : [];
     console.warn('获取课前植物照片失败:', error);
   }
 });
@@ -161,13 +197,24 @@ const openPlantPreview = (startIndex) => {
   });
 };
 
+
+const openRecordCardPreview = (startIndex) => {
+  if (!preRecordCardUrls.value.length) return;
+  showImagePreview({
+    images: preRecordCardUrls.value,
+    startPosition: startIndex,
+    closeable: true,
+    closeOnClickOverlay: true,
+    teleport: 'body',
+  });
+};
 const onFinalSubmit = async () => {
   if (selectedChecks.value.length === 0) {
     showToast('请至少勾选一项评价');
     return;
   }
 
-  const stage3Stars = Number(hasUnseen.value || hasFeeling.value);
+  const stage3Stars = Number(selectedChecks.value.length > 0);
 
   isSubmitting.value = true;
   try {
@@ -274,7 +321,7 @@ const onNextClick = async () => {
 }
 
 /* ========================================= */
-/*               第一页：照片回顾页               */
+/*               第一页：照片回顾页              */
 /* ========================================= */
 .photo-page {
   display: flex;
@@ -332,7 +379,7 @@ const onNextClick = async () => {
   border-radius: 4px;
 }
 
-/* 提示框：变成一张随手贴的黄色便利贴 */
+/* 提示框：黄色便利贴风格 */
 .photo-hint {
   font-size: 20px;
   line-height: 1.5;
@@ -359,10 +406,49 @@ const onNextClick = async () => {
   padding: 10px; /* 给相片阴影留空间 */
 }
 
+.photo-panel--judge {
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.photo-panel--judge .photo-hint {
+  margin-top: 8px;
+}
+
+.photo-grid--judge {
+  flex: 1;
+  align-content: center;
+  gap: 12px;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.photo-panel--judge .photo-btn {
+  min-height: 170px;
+  padding: 10px 10px 14px;
+}
+
+.photo-panel--judge .plant-img {
+  min-height: 160px;
+  height: 186px;
+}
+
 /* 单个照片：拍立得相纸风格 */
+.photo-grid.photo-grid-count-1 {
+  grid-template-columns: minmax(0, 420px) !important;
+  justify-content: center;
+}
+
+.photo-grid.photo-grid-count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-content: center;
+  width: min(100%, 860px);
+  margin: 0 auto;
+}
+
 .photo-btn {
   border: 0;
-  padding: 10px 10px 24px 10px; /* 底部留白多，像相纸 */
+  padding: 10px 10px 24px 10px; /* 底部留白更多，像相纸 */
   background: #FFF;
   border: 1px solid #E3DBC7;
   box-shadow: 2px 6px 14px rgba(90, 76, 67, 0.1);
@@ -371,11 +457,6 @@ const onNextClick = async () => {
   min-height: 130px;
   transition: all 0.2s ease;
 }
-.photo-btn:hover {
-  transform: translateY(-4px) rotate(1deg);
-  box-shadow: 4px 10px 20px rgba(90, 76, 67, 0.15);
-}
-
 .plant-img {
   width: 100%;
   height: 100%;
@@ -397,8 +478,66 @@ const onNextClick = async () => {
   background: #FAF7EA;
 }
 
+.pre-record-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.photo-panel--judge .pre-record-section {
+  margin-top: -18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.photo-panel--judge .pre-record-title {
+  text-align: center;
+  transform: translateY(-12px);
+}
+
+.pre-record-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #5A4C43;
+  text-align: left;
+}
+
+.pre-record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.photo-panel--judge .pre-record-grid {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+  align-content: center;
+  flex: 1;
+  margin-top: -18px;
+}
+
+.pre-record-btn {
+  border: 0;
+  padding: 6px;
+  background: #FFF;
+  border: 1px solid #E3DBC7;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pre-record-img {
+  width: 100%;
+  height: 110px;
+  background: #F6F4E8;
+}
+
+.photo-panel--judge .pre-record-img {
+  height: clamp(170px, 32vh, 300px);
+}
+
 /* ========================================= */
-/*               第二页：选项打卡页               */
+/*               第二页：选项打卡页              */
 /* ========================================= */
 .check-page {
   display: flex;
@@ -428,7 +567,7 @@ const onNextClick = async () => {
   transform: translateX(-50%) rotate(-1deg);
   width: 120px;
   height: 24px;
-  background-color: rgba(220, 203, 163, 0.7); /* 换个土黄胶带 */
+  background-color: rgba(220, 203, 163, 0.7); /* 土黄胶带 */
   box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
   border-radius: 2px;
   z-index: 10;
@@ -442,7 +581,7 @@ const onNextClick = async () => {
   text-align: center;
 }
 
-/* 内部选项框：像是在纸上画的一个虚线区域 */
+/* 内部选项框：像在纸上画的虚线区域 */
 .eval-box {
   border: 2px solid #E3DBC7;
   background: #FAF7EA;
@@ -538,6 +677,36 @@ const onNextClick = async () => {
   transform: scale(1.1) rotate(-5deg);
 }
 
+/* 分组卡片样式 */
+.discovery-group,
+.no-discovery-group {
+  border: 2px solid #E3DBC7;
+  border-radius: 12px;
+  background: #FDFBF2;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 取消提示卡片外观，保持正文样式 */
+.photo-hint {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  padding: 0 !important;
+}
+
+/* “暂无新发现”行文案强调 */
+.no-discovery-row {
+  color: #5C8D6D;
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 0;
+}
+
 
 /* =========== 按钮尺寸适配 =========== */
 :deep(.top-nav-action.van-button) {
@@ -561,6 +730,18 @@ const onNextClick = async () => {
 
   .photo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pre-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photo-panel--judge .pre-record-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .photo-panel--judge .pre-record-img {
+    height: clamp(150px, 28vh, 220px);
   }
 
   .photo-btn, .plant-img {
@@ -592,4 +773,18 @@ const onNextClick = async () => {
     box-shadow: 0 4px 0 #E3DBC7;
   }
 }
+
+/* 固定勾选态高度，避免选中时容器抖动 */
+.check-row.active {
+  transform: none !important;
+  box-shadow: 0 5px 0 #3A664A !important;
+}
+
+@media (max-width: 900px) {
+  .check-row.active {
+    transform: none !important;
+    box-shadow: 0 4px 0 #3A664A !important;
+  }
+}
 </style>
+

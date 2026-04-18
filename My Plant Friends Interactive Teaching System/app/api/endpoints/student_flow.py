@@ -115,34 +115,14 @@ def _normalize_text_items(items: List[str]) -> List[str]:
 
 def _calc_stage3_stars(checks: List[str]) -> int:
     values = _normalize_text_items(checks)
-    has_unseen = any(('（1）' in v) or ('(1)' in v) or ('以前没观察到' in v) for v in values)
-    has_feeling = any(('（2）' in v) or ('(2)' in v) or ('有了点儿感受' in v) or ('有了点儿感受' in v) for v in values)
-    return int(has_unseen) + int(has_feeling)
-
-
-def _calc_stage5_stars(checks: List[str]) -> int:
-    values = _normalize_text_items(checks)
-    # 检测选项1的两个子项：任意勾选至少一个算1星
-    has_option1_sub1 = any(('（1）我能从多方面介绍' in v) for v in values)
-    has_option1_sub2 = any(('（2）我能有顺序介绍' in v) for v in values)
-    has_option1 = has_option1_sub1 or has_option1_sub2
-    
-    # 检测选项2：勾选算1星
-    has_option2 = any(('我分享了我的习作' in v) for v in values)
-    
-    return int(has_option1) + int(has_option2)
-
-
-def _calc_stage3_stars(checks: List[str]) -> int:
-    values = _normalize_text_items(checks)
     has_discovery = any(
-        ('（1）' in v)
+        ('\uff081\uff09' in v)
         or ('(1)' in v)
-        or ('（2）' in v)
+        or ('\u4ee5\u524d\u6ca1\u89c2\u5bdf\u5230' in v)
+        or ('\uff082\uff09' in v)
         or ('(2)' in v)
-        or ('以前没观察到' in v)
-        or ('有了点儿感受' in v)
-        or ('感受' in v)
+        or ('\u6709\u4e86\u70b9\u513f\u611f\u53d7' in v)
+        or ('\u611f\u53d7' in v)
         for v in values
     )
     return 1 if has_discovery else 0
@@ -151,20 +131,21 @@ def _calc_stage3_stars(checks: List[str]) -> int:
 def _calc_stage5_stars(checks: List[str]) -> int:
     values = _normalize_text_items(checks)
     has_multiaspect = any(
-        ('（1）' in v)
+        ('\uff081\uff09' in v)
         or ('(1)' in v)
-        or ('多方面' in v)
+        or ('\u591a\u65b9\u9762' in v)
         for v in values
     )
     has_orderly = any(
-        ('（2）' in v)
+        ('\uff082\uff09' in v)
         or ('(2)' in v)
-        or ('顺序' in v)
+        or ('\u987a\u5e8f' in v)
+        or ('\u8fde\u8d77\u6765' in v)
         for v in values
     )
     has_shared = any(
-        ('分享' in v)
-        or ('愿意把习作分享' in v)
+        ('\u5206\u4eab' in v)
+        or ('\u613f\u610f\u628a\u4e60\u4f5c\u5206\u4eab' in v)
         for v in values
     )
     return int(has_multiaspect) + int(has_orderly) + int(has_shared)
@@ -174,15 +155,18 @@ def _calc_stage5_stars(checks: List[str]) -> int:
 async def student_login(req: LoginReq):
     sid = _student_id_text(req.student_id)
     source_sid = map_judge_to_source_student_id(sid)
-    query = _student_id_query(source_sid)
+    source_query = _student_id_query(source_sid)
 
-    student = await db_instance.db.students.find_one(query)
+    student = await db_instance.db.students.find_one(source_query)
     if not student:
         raise HTTPException(status_code=404, detail=f'student {source_sid} not found')
 
     if not _is_judge_submission(sid):
+        # Always mark login state on the real login id itself.
+        # This prevents judge-id mapping from accidentally toggling source students.
+        login_query = _student_id_query(sid)
         await db_instance.db.students.update_one(
-            query,
+            login_query,
             {'$set': {'is_logged_in': True, 'last_active_time': datetime.now()}},
         )
 
@@ -193,10 +177,10 @@ async def student_login(req: LoginReq):
         'data': {
             'student_id': sid,
             'student_name': student.get('student_name', ''),
-            'pre_record_card': student.get('pre_record_card', ''),
             'pre_plant_1': student.get('pre_plant_1', ''),
             'pre_plant_2': student.get('pre_plant_2', ''),
             'pre_plant_3': student.get('pre_plant_3', ''),
+            'pre_record_card': student.get('pre_record_card', ''),
         },
     }
 
@@ -302,7 +286,8 @@ async def track_resource_click(student_id: str, res_id: str):
             '$set': {'last_active_time': datetime.now()},
         },
     )
-    await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
+    # Resource clicks can be very high-frequency in class.
+    # Keep write tracking, but avoid per-click dashboard refresh storms.
     return {'status': 'recorded'}
 
 
@@ -371,10 +356,9 @@ async def get_student_info(student_id: str):
     return {
         'student_id': _student_id_text(student_id),
         'student_name': student.get('student_name', ''),
-        'pre_record_card': student.get('pre_record_card', ''),
         'pre_plant_1': student.get('pre_plant_1', ''),
         'pre_plant_2': student.get('pre_plant_2', ''),
         'pre_plant_3': student.get('pre_plant_3', ''),
+        'pre_record_card': student.get('pre_record_card', ''),
     }
-
 

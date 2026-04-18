@@ -24,9 +24,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useUserStore } from '../store/user';
 import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
+import { scheduleStudentPreloadAfterWelcome } from '../utils/imagePreloader';
 
 const userStore = useUserStore();
 const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.welcome));
@@ -35,6 +36,19 @@ const goNext = () => {
   if (!canGoNext.value) return;
   userStore.setStage('1');
 };
+
+onMounted(() => {
+  if (!userStore.studentId) return;
+  scheduleStudentPreloadAfterWelcome(
+    {
+      student_id: userStore.studentId,
+      pre_plant_1: userStore.prePlantPhotos?.[0] || '',
+      pre_plant_2: userStore.prePlantPhotos?.[1] || '',
+      pre_plant_3: userStore.prePlantPhotos?.[2] || '',
+    },
+    { delayMs: 80 }
+  );
+});
 </script>
 
 <style scoped>
@@ -96,9 +110,9 @@ const goNext = () => {
 
 .right-area {
   position: absolute;
-  right: 5vw;
-  top: 5.5vh;
-  width: min(58vw, 980px);
+  right: 3.2vw;
+  top: 4.8vh;
+  width: min(61vw, 1080px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,19 +143,21 @@ const goNext = () => {
   font-weight: 700;
   text-align: center;
   text-shadow: 0 1px 0 rgba(108, 106, 106, 0.68);
+  transform: translateX(30px);
 }
 
 .course-name-image {
-  margin-top: 6.6vh;
-  width: min(100%, 1140px);
-  aspect-ratio: 41 / 11;
+  margin-top: clamp(24px, 4.2vh, 56px);
+  width: min(100%, 1060px);
+  aspect-ratio: 13 / 4;
   border-radius: 0;
   background-image: url('/welcome/course-title.png');
   background-position: center;
-  background-size: 100% auto;
+  background-size: contain;
   background-repeat: no-repeat;
   background-color: transparent;
   box-shadow: none;
+  transform: translateX(30px);
 }
 
 .grass-btn {
@@ -206,7 +222,7 @@ const goNext = () => {
 
   .right-area {
     right: 3vw;
-    width: 58vw;
+    width: 60vw;
   }
 
   .school-badge {
@@ -220,7 +236,7 @@ const goNext = () => {
   }
 
   .course-name-image {
-    margin-top: 2.4vh;
+    margin-top: clamp(14px, 2.2vh, 28px);
   }
 
   .grass-btn {
