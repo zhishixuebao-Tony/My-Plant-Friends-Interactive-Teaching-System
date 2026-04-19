@@ -161,17 +161,6 @@ async def student_login(req: LoginReq):
     if not student:
         raise HTTPException(status_code=404, detail=f'student {source_sid} not found')
 
-    if not _is_judge_submission(sid):
-        # Always mark login state on the real login id itself.
-        # This prevents judge-id mapping from accidentally toggling source students.
-        login_query = _student_id_query(sid)
-        await db_instance.db.students.update_one(
-            login_query,
-            {'$set': {'is_logged_in': True, 'last_active_time': datetime.now()}},
-        )
-
-        await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
-
     return {
         'status': 'success',
         'data': {
@@ -183,6 +172,26 @@ async def student_login(req: LoginReq):
             'pre_record_card': student.get('pre_record_card', ''),
         },
     }
+
+
+@router.post('/stage0/confirm-login')
+async def confirm_student_login(req: LoginReq):
+    sid = _student_id_text(req.student_id)
+    source_sid = map_judge_to_source_student_id(sid)
+
+    student = await db_instance.db.students.find_one(_student_id_query(source_sid), {'_id': 0, 'student_id': 1})
+    if not student:
+        raise HTTPException(status_code=404, detail=f'student {source_sid} not found')
+
+    if _is_judge_submission(sid):
+        return {'status': 'success'}
+
+    await db_instance.db.students.update_one(
+        _student_id_query(sid),
+        {'$set': {'is_logged_in': True, 'last_active_time': datetime.now()}},
+    )
+    await ws_manager.notify_teacher({'action': 'REFRESH_DASHBOARD'})
+    return {'status': 'success'}
 
 
 @router.post('/stage/sync')
@@ -361,4 +370,3 @@ async def get_student_info(student_id: str):
         'pre_plant_3': student.get('pre_plant_3', ''),
         'pre_record_card': student.get('pre_record_card', ''),
     }
-

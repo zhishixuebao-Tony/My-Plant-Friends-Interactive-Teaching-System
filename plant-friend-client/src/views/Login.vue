@@ -132,7 +132,7 @@ const onPreLogin = async () => {
   }
 };
 
-const onFinalConfirm = () => {
+const onFinalConfirm = async () => {
   if (!studentFullData.value) return;
 
   if (document.fullscreenElement !== document.documentElement) {
@@ -149,6 +149,14 @@ const onFinalConfirm = () => {
     pre_plant_3: studentFullData.value.pre_plant_3,
     pre_record_card: studentFullData.value.pre_record_card,
   });
+
+  try {
+    await axios.post('/api/student/stage0/confirm-login', {
+      student_id: studentFullData.value.student_id,
+    });
+  } catch (err) {
+    console.error('确认登录失败:', err);
+  }
 
   userStore.setStage('welcome');
   scheduleStudentPreloadAfterWelcome(studentFullData.value, { delayMs: 120 });

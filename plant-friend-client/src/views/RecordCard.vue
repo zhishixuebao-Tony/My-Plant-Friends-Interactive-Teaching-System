@@ -171,7 +171,7 @@ const toggleFeeling = () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get(`/api/student/info/${userStore.studentId}`);
+    const response = await axios.get(`/api/student/student/info/${userStore.studentId}`);
     const data = response.data || {};
     const photosFromApi = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3]
       .map((v) => toDisplayImageUrl(v))
