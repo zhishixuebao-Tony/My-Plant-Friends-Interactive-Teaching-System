@@ -1,866 +1,790 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <van-nav-bar title="环节 2：我的记录卡观察与修改" fixed placeholder border />
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">记录我的植物朋友</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        :loading="isSubmitting"
+        :disabled="nextDisabled"
+        @click="onNextClick"
+        class="top-nav-action"
+      >
+        {{ isPhotoPage ? '下一步' : '提交' }}
+      </van-button>
+    </div>
 
-    <div class="grid-layout">
-      <!-- ================= 左上：课前记录卡展示区 ================= -->
-      <div class="record-card-section pre-record">
-        <div class="section-header">
-          <van-icon name="photo-o" color="#07c160" /> 
-          课前上传的记录卡
-          <span class="record-hint">(课前已上传)</span>
+    <div v-if="isPhotoPage" class="stage-body photo-page">
+      <section class="photo-panel" :class="{ 'photo-panel--judge': hasJudgePreRecord }">
+        <div class="photo-hint">再次走近自己的植物朋友，也许你会有新的发现，把你的新发现补充在记录卡上。</div>
+        <div
+          v-if="prePlantPhotos.length"
+          class="photo-grid"
+          :class="[
+            `photo-grid-count-${Math.min(prePlantPhotos.length, 3)}`,
+            { 'photo-grid--judge': hasJudgePreRecord },
+          ]"
+        >
+          <button
+            v-for="(img, idx) in prePlantPhotos"
+            :key="idx"
+            type="button"
+            class="photo-btn"
+            @click="openPlantPreview(idx)"
+          >
+            <van-image :src="img" fit="cover" radius="4" class="plant-img" />
+          </button>
         </div>
-        
-        <div class="record-content">
-          <div v-if="preRecordCardUrl" class="pre-record-image">
-            <div class="record-card-wrapper">
-              <van-image 
-                :src="preRecordCardUrl" 
-                fit="contain" 
-                class="record-card-img" 
-                @click="openPreRecordCardPreview" 
-                radius="8"
-              />
-              <div class="record-card-label">
-                <span class="record-index">课前记录卡</span>
-                <span class="record-hint-small">点击放大查看</span>
-              </div>
-            </div>
-          </div>
-          
-          <div v-else class="empty-record">
-            <van-icon name="photo-fail" size="60" color="#ebedf0" />
-            <p>暂无课前记录卡</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= 右上：修改后记录卡上传区 ================= -->
-      <div class="record-card-section new-record">
-        <div class="section-header">
-          <van-icon name="camera-o" color="#1989fa" /> 
-          修改后的记录卡
-          <span class="record-hint">(先拍照，再上传)</span>
-        </div>
-        
-        <div class="record-content">
-          <div class="upload-area">
-            <!-- 第一步：拍照按钮 -->
-            <div class="capture-step" v-if="!capturedImage">
-              <div class="capture-hint">
-                <van-icon name="camera" color="#1989fa" size="24" />
-                <span>第一步：点击拍照按钮拍摄记录卡</span>
-              </div>
-              <van-button 
-                type="primary" 
-                size="large" 
-                block 
-                round 
-                @click="openCamera"
-                class="capture-btn"
-              >
-                <van-icon name="photograph" size="20" style="margin-right: 8px;" />
-                点击拍照
-              </van-button>
-            </div>
-            
-            <!-- 第二步：预览和上传 -->
-            <div v-if="capturedImage" class="preview-upload-step">
-              <div class="step-hint">
-                <van-icon name="eye" color="#07c160" size="20" />
-                <span>第二步：预览照片并上传</span>
-              </div>
-              
-              <!-- 预览图片 -->
-              <div class="captured-preview">
-                <van-image 
-                  :src="capturedImage" 
-                  fit="contain" 
-                  class="captured-img"
-                  radius="8"
-                />
-                <div class="preview-actions">
-                  <van-button 
-                    type="default" 
-                    size="small" 
-                    @click="recapturePhoto"
-                    class="recapture-btn"
-                  >
-                    <van-icon name="replay" />
-                    重新拍照
-                  </van-button>
-                  <van-button 
-                    type="warning" 
-                    size="small" 
-                    @click="uploadPhoto"
-                    :loading="isUploading"
-                    class="upload-btn"
-                  >
-                    <van-icon name="cloud-upload" />
-                    上传图片
-                  </van-button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= 下方：评价与提交板块 ================= -->
-      <div class="evaluation-submit-section">
-        <div class="section-header">
-          <van-icon name="comment-o" color="#f2bd27" /> 
-          记录卡自我评价与提交
-        </div>
-        
-        <div class="evaluation-submit-content">
-          <!-- 评价部分 -->
-          <div class="evaluation-part">
-            <div class="evaluation-description">
-              <p>请根据以下标准评价你的记录卡：</p>
-            </div>
-            
-            <van-checkbox-group v-model="evalChecks" shape="square">
-              <div 
-                class="eval-card" 
-                v-for="(item, index) in evalOptions" 
-                :key="index"
-                @click="toggleEval(item)"
-                :class="{ 'is-active': evalChecks.includes(item) }"
-              >
-                <van-checkbox :name="item" @click.stop>
-                  <div class="eval-label">
-                    <span class="eval-index">评价 {{ index + 1 }}</span>
-                    <span class="eval-text">{{ item }}</span>
-                  </div>
-                </van-checkbox>
-              </div>
-            </van-checkbox-group>
-          </div>
-          
-          <!-- 提交部分 -->
-          <div class="submit-part">
-            <van-button 
-              type="primary" 
-              block 
-              round 
-              size="large" 
-              @click="onFinalSubmit"
-              :loading="isSubmitting"
-              :disabled="!isUploadSuccess"
-              loading-text="正在提交数据..."
-              class="next-step-btn"
+        <div v-if="isJudgeLogin && preRecordCardUrls.length" class="pre-record-section">
+          <div class="pre-record-title">记录卡</div>
+          <div class="pre-record-grid">
+            <button
+              v-for="(url, idx) in preRecordCardUrls"
+              :key="`pre-record-${idx}`"
+              type="button"
+              class="pre-record-btn"
+              @click="openRecordCardPreview(idx)"
             >
-              <van-icon name="arrow" style="transform: rotate(90deg); margin-right: 8px;" />
-              提交并进入环节 3
-            </van-button>
-            
-            <div class="progress-hint" v-if="isUploadSuccess">
-              <van-icon name="success" color="#07c160" />
-              <span>记录卡已上传，请完成评价后提交</span>
-            </div>
-            
-            <div class="progress-hint" v-else>
-              <van-icon name="info" color="#999" />
-              <span>请先拍照上传记录卡并完成评价</span>
-            </div>
+              <van-image :src="url" fit="cover" radius="4" class="pre-record-img" />
+            </button>
           </div>
         </div>
-      </div>
+        <div v-if="!prePlantPhotos.length" class="empty-tip">暂无植物照片</div>
+      </section>
+    </div>
+
+    <div v-else class="stage-body check-page">
+      <section class="evaluate-panel">
+        <header class="level-1-title">再次观察，我有没有新的发现呢？</header>
+        <div class="eval-box">
+          <div class="discovery-group">
+          <div class="level-2-title">我已经有了新的发现：</div>
+
+          <button
+            type="button"
+            class="check-row level-3-row"
+            :class="{ active: hasUnseen, disabled: groupDisabled }"
+            :disabled="groupDisabled"
+            @click="toggleUnseen"
+          >
+            <span>（1）有以前没观察到的</span>
+            <span class="square" :class="{ checked: hasUnseen }">{{ hasUnseen ? '✓' : '' }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="check-row level-3-row"
+            :class="{ active: hasFeeling, disabled: groupDisabled }"
+            :disabled="groupDisabled"
+            @click="toggleFeeling"
+          >
+            <span>（2）观察后，有了点儿感受（身体感觉/心里想法）</span>
+            <span class="square" :class="{ checked: hasFeeling }">{{ hasFeeling ? '✓' : '' }}</span>
+          </button>
+
+          </div>
+
+          <div class="no-discovery-group">
+          <button
+            type="button"
+            class="check-row level-2-row no-discovery-row"
+            :class="{ active: noNewFinding, disabled: noNewDisabled }"
+            :disabled="noNewDisabled"
+            @click="toggleNoNew"
+          >
+            <span>我暂时没有新的发现。</span>
+            <span class="square" :class="{ checked: noNewFinding }">{{ noNewFinding ? '✓' : '' }}</span>
+          </button>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useUserStore } from '../store/user';
-import { uploadImageFlow } from '../api/student'; 
+import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
-import { showToast, showImagePreview } from 'vant';
+import { showImagePreview, showToast } from 'vant';
+import { useUserStore } from '../store/user';
+import { toDisplayImageUrl } from '../utils/imageProxy';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 
-// 状态控制
-const evalChecks = ref([]);
-const fileList = ref([]);
 const isSubmitting = ref(false);
-const isUploadSuccess = ref(false);
-const isUploading = ref(false);
-const capturedImage = ref(null); // 拍照后的图片数据
-const preRecordCardUrl = ref(''); // 课前记录卡URL
-const uploadedUrl = ref(''); // 上传后的图片URL
+const currentPage = ref(1);
+const prePlantPhotos = ref([]);
+const preRecordCardUrls = ref([]);
 
-// 评价选项
-const evalOptions = [
-  '评价一：能真实记录植物特点',
-  '评价二：能描写出自己的感受'
-];
+const noNewFinding = ref(false);
+const hasUnseen = ref(false);
+const hasFeeling = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.recordCard));
 
-  // 加载课前记录卡数据
+const isJudgeLogin = computed(() => {
+  const sid = Number(String(userStore.studentId || '').trim());
+  return Number.isFinite(sid) && sid >= 51 && sid <= 70;
+});
+
+const isPhotoPage = computed(() => currentPage.value === 1);
+const groupDisabled = computed(() => noNewFinding.value);
+const noNewDisabled = computed(() => hasUnseen.value || hasFeeling.value);
+const hasJudgePreRecord = computed(() => isJudgeLogin.value && preRecordCardUrls.value.length > 0);
+
+const selectedChecks = computed(() => {
+  const checks = [];
+  if (noNewFinding.value) {
+    checks.push('我暂时没有新的发现。');
+    return checks;
+  }
+  if (hasUnseen.value) checks.push('我已经有了新的发现：（1）有以前没观察到的');
+  if (hasFeeling.value) checks.push('我已经有了新的发现：（2）观察后，有了点儿感受（身体感觉/心里想法）');
+  return checks;
+});
+
+const nextDisabled = computed(() => {
+  if (isPhotoPage.value) return !canGoNext.value;
+  return selectedChecks.value.length === 0;
+});
+
+const toggleNoNew = () => {
+  if (noNewDisabled.value) return;
+  noNewFinding.value = !noNewFinding.value;
+  if (noNewFinding.value) {
+    hasUnseen.value = false;
+    hasFeeling.value = false;
+  }
+};
+
+const toggleUnseen = () => {
+  if (groupDisabled.value) return;
+  hasUnseen.value = !hasUnseen.value;
+};
+
+const toggleFeeling = () => {
+  if (groupDisabled.value) return;
+  hasFeeling.value = !hasFeeling.value;
+};
+
 onMounted(async () => {
   try {
-    // 使用教师端接口获取学生详情，其中包含课前记录卡信息
-    console.log('正在获取课前记录卡，学生ID:', userStore.studentId);
-    const response = await axios.get(`/api/teacher/dashboard/student-detail/${userStore.studentId}`);
-    
-    if (response.data) {
-      const data = response.data;
-      console.log('获取到的学生详情数据:', data);
-      
-      // 从教师面板接口获取课前记录卡URL
-      if (data.pre_record_card) {
-        preRecordCardUrl.value = data.pre_record_card;
-        console.log('成功获取课前记录卡URL:', preRecordCardUrl.value);
-      } else {
-        console.warn('教师端接口返回的数据中没有pre_record_card字段:', data);
-        // 尝试其他可能的字段名
-        if (data.preRecordCard) {
-          preRecordCardUrl.value = data.preRecordCard;
-        } else if (data.record_card_pre) {
-          preRecordCardUrl.value = data.record_card_pre;
-        }
-      }
-    }
+    const response = await axios.get(`/api/student/student/info/${userStore.studentId}`);
+    const data = response.data || {};
+    const photosFromApi = [data.pre_plant_1, data.pre_plant_2, data.pre_plant_3]
+      .map((v) => toDisplayImageUrl(v))
+      .filter(Boolean);
+    const recordCardUrl = toDisplayImageUrl(data.pre_record_card || '');
+    preRecordCardUrls.value = recordCardUrl ? [recordCardUrl] : [];
+    prePlantPhotos.value = photosFromApi.length ? photosFromApi : userStore.prePlantPhotos || [];
   } catch (error) {
-    console.warn('获取课前记录卡失败:', error);
-    
-    // 使用备用方案：尝试从学生信息接口获取
-    try {
-      const studentResponse = await axios.get(`/api/student/student/info/${userStore.studentId}`);
-      if (studentResponse.data && studentResponse.data.pre_record_card) {
-        preRecordCardUrl.value = studentResponse.data.pre_record_card;
-        console.log('通过学生信息接口获取课前记录卡成功');
-      }
-    } catch (studentError) {
-      console.warn('学生信息接口也失败，使用本地缓存:', studentError);
-      
-      // 最后尝试从userStore中获取（如果之前有缓存）
-      if (userStore.preRecordCard) {
-        preRecordCardUrl.value = userStore.preRecordCard;
-        console.log('使用本地缓存的课前记录卡');
-      }
-    }
+    prePlantPhotos.value = userStore.prePlantPhotos || [];
+    preRecordCardUrls.value = userStore.preRecordCard ? [userStore.preRecordCard] : [];
+    console.warn('获取课前植物照片失败:', error);
   }
 });
 
-// --- 课前记录卡预览 ---
-const openPreRecordCardPreview = () => {
-  if (!preRecordCardUrl.value) return;
+const openPlantPreview = (startIndex) => {
+  if (!prePlantPhotos.value.length) return;
   showImagePreview({
-    images: [preRecordCardUrl.value],
-    startPosition: 0,
+    images: prePlantPhotos.value,
+    startPosition: startIndex,
     closeable: true,
+    closeOnClickOverlay: true,
+    teleport: 'body',
   });
 };
 
-// --- 评价逻辑 ---
-const toggleEval = (val) => {
-  if (evalChecks.value.includes(val)) {
-    evalChecks.value = evalChecks.value.filter(i => i !== val);
-  } else {
-    evalChecks.value.push(val);
-  }
+
+const openRecordCardPreview = (startIndex) => {
+  if (!preRecordCardUrls.value.length) return;
+  showImagePreview({
+    images: preRecordCardUrls.value,
+    startPosition: startIndex,
+    closeable: true,
+    closeOnClickOverlay: true,
+    teleport: 'body',
+  });
 };
-
-// --- 拍照上传逻辑 ---
-// 打开相机（使用隐藏的文件输入）
-let fileInputRef = null;
-
-const openCamera = () => {
-  // 创建隐藏的文件输入元素
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'camera'; // 移动设备上调用摄像头
-  
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // 预览图片
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        capturedImage.value = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  input.click();
-};
-
-// 重新拍照
-const recapturePhoto = () => {
-  capturedImage.value = null;
-};
-
-// 上传图片
-const uploadPhoto = async () => {
-  if (!capturedImage.value) return;
-  
-  isUploading.value = true;
-  try {
-    // 将base64转换为文件对象
-    const base64Data = capturedImage.value.split(',')[1];
-    const binaryData = atob(base64Data);
-    const array = [];
-    for (let i = 0; i < binaryData.length; i++) {
-      array.push(binaryData.charCodeAt(i));
-    }
-    const file = new File([new Uint8Array(array)], 'record_card.jpg', { type: 'image/jpeg' });
-    
-    // 调用阿里云 OSS 直传工具
-    const url = await uploadImageFlow(userStore.studentId, 'stage2_record', file);
-    
-    uploadedUrl.value = url;
-    isUploadSuccess.value = true;
-    fileList.value = [{ content: capturedImage.value, status: 'done' }];
-    showToast({ message: '记录卡已成功存入云端', type: 'success' });
-  } catch (err) {
-    console.error('上传失败:', err);
-    showToast('上传失败，请检查网络或重试');
-  } finally {
-    isUploading.value = false;
-  }
-};
-
-// 删除已上传图片
-const onDelete = () => {
-  isUploadSuccess.value = false;
-  uploadedUrl.value = '';
-  capturedImage.value = null;
-  fileList.value = [];
-};
-
-// --- 最终提交逻辑 ---
 const onFinalSubmit = async () => {
-  if (!isUploadSuccess.value) return showToast('请先拍照上传记录卡哦');
+  if (selectedChecks.value.length === 0) {
+    showToast('请至少勾选一项评价');
+    return;
+  }
 
-  const randomDelay = Math.floor(Math.random() * 2000);
-  await new Promise(resolve => setTimeout(resolve, randomDelay));
-  
+  const stage3Stars = Number(selectedChecks.value.length > 0);
+
   isSubmitting.value = true;
   try {
     await axios.post('/api/student/stage2/record-card', {
       student_id: userStore.studentId,
-      checks: evalChecks.value,
-      img_url: uploadedUrl.value
+      checks: selectedChecks.value,
     });
-    
-    showToast({ message: '记录卡提交成功！', type: 'success' });
-    userStore.setStage('3');
-  } catch (err) {
-    console.error(err);
+    if (typeof userStore.setStage3Stars === 'function') {
+      userStore.setStage3Stars(stage3Stars);
+    }
+    userStore.setDimensionSelections(selectedChecks.value);
+    userStore.setStage('record-card-transition');
+    showToast({ message: '提交成功', type: 'success' });
+  } catch (error) {
+    console.error(error);
     showToast('提交失败，请重试');
   } finally {
     isSubmitting.value = false;
   }
 };
+
+const onNextClick = async () => {
+  if (isPhotoPage.value) {
+    if (!canGoNext.value) return;
+    currentPage.value = 2;
+    return;
+  }
+  await onFinalSubmit();
+};
 </script>
 
 <style scoped>
-/* ================= 整体布局 - 平板优化 v4 (高度优化) ================= */
+/* =========== 全局背景 =========== */
 .stage-container {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #f7f8fa;
   overflow: hidden;
+  background: #F4F1E1; /* 复古牛皮纸色底 */
 }
 
-.grid-layout {
-  flex: 1;
+/* =========== 顶部导航栏 =========== */
+.top-nav {
+  min-height: 56px;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: minmax(150px, 30vh) minmax(150px, auto); /* 进一步降低行高 */
-  gap: 6px; /* 进一步减少间隙 */
-  padding: 6px; /* 进一步减少内边距 */
-  overflow: hidden;
-  max-height: calc(100vh - 120px); /* 考虑导航栏和地址栏空间 */
-}
-
-/* 平板适配 - 极限紧凑布局 */
-@media (max-width: 1024px) {
-  .grid-layout {
-    max-height: calc(100vh - 100px);
-    gap: 5px;
-    padding: 5px;
-    grid-template-rows: minmax(130px, 28vh) minmax(130px, auto);
-  }
-}
-
-/* 平板横向模式优化 - 给下方更多空间 */
-@media (max-width: 1024px) and (orientation: landscape) {
-  .grid-layout {
-    grid-template-rows: minmax(110px, 25vh) minmax(140px, auto);
-  }
-}
-
-@media (max-width: 768px) {
-  .grid-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto; /* 手机端恢复自动高度 */
-    gap: 10px;
-    padding: 10px;
-  }
-}
-
-/* 横向平板优化 - 进一步压缩上方空间 */
-@media (max-width: 1366px) and (min-height: 1024px) and (orientation: portrait) {
-  .grid-layout {
-    max-height: calc(100vh - 140px);
-    gap: 8px;
-    padding: 8px;
-    grid-template-rows: minmax(150px, 28vh) minmax(150px, auto);
-  }
-}
-
-/* 小尺寸平板优化 */
-@media (max-width: 768px) and (min-height: 1024px) {
-  .grid-layout {
-    grid-template-rows: minmax(120px, 25vh) minmax(120px, auto);
-  }
-}
-
-/* 超小平板优化 - 极度压缩 */
-@media (max-height: 768px) and (orientation: portrait) {
-  .grid-layout {
-    grid-template-rows: minmax(100px, 22vh) minmax(100px, auto);
-  }
-}
-
-/* 确保内容区域可滚动而不是被遮盖 */
-.record-card-section {
-  min-height: 0; /* 重要：允许内容区域收缩 */
-}
-
-.pre-record-image,
-.upload-area {
-  overflow-y: auto;
-  max-height: 100%;
-}
-
-/* ================= 通用区块样式 - 平板优化 ================= */
-.record-card-section,
-.evaluation-submit-section {
-  background: #fff;
-  border-radius: 12px; /* 减少圆角 */
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); /* 减少阴影 */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.section-header {
-  font-size: 16px; /* 减小字体 */
-  font-weight: bold;
-  color: #333;
-  padding: 12px 14px; /* 减少padding */
-  border-bottom: 1px solid #f2f3f5;
-  display: flex;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
-  gap: 6px; /* 减少间隙 */
+  gap: 8px;
+  background: #FDFBF2; 
+  border-bottom: 2px dashed #D4CBB3; 
+  box-shadow: 0 4px 10px rgba(90, 76, 67, 0.05); 
   flex-shrink: 0;
+  z-index: 10;
 }
 
-.record-hint {
-  font-size: 12px; /* 减小字体 */
-  color: #999;
-  margin-left: 6px; /* 减少间距 */
-  font-weight: normal;
+.top-nav-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #5A4C43; 
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 1px;
 }
 
-.record-content,
-.evaluation-submit-content {
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
+}
+
+/* 覆盖 Vant 按钮样式 - 3D手账风 */
+:deep(.van-button--primary) {
+  background-color: #5C8D6D !important;
+  border-color: #5C8D6D !important;
+  box-shadow: 0 4px 0 #3A664A !important;
+  color: #FDFBF2 !important;
+  transition: all 0.1s;
+}
+:deep(.van-button--primary:active) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #3A664A !important;
+}
+:deep(.van-button--primary:disabled) {
+  background-color: #E3DBC7 !important;
+  border-color: #E3DBC7 !important;
+  color: #A3968C !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* =========== 内容区域 =========== */
+.stage-body {
   flex: 1;
-  padding: 12px; /* 减少padding */
-  display: flex;
-  flex-direction: column;
+  padding: 16px;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
-/* ================= 左上：课前记录卡展示区 ================= */
-.pre-record {
-  border-top: 4px solid #07c160;
+/* ========================================= */
+/*               第一页：照片回顾页              */
+/* ========================================= */
+.photo-page {
+  display: flex;
 }
 
-.pre-record-image {
-  flex: 1;
+/* 手账内页面板 */
+.photo-panel {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  background: #FDFBF2;
+  border-radius: 16px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 16px;
+  border: 2px dashed #D4CBB3;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  min-height: 0;
+  position: relative;
+}
+
+/* 面板顶部的小胶带 */
+.photo-panel::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1deg);
+  width: 120px;
+  height: 24px;
+  background-color: rgba(135, 179, 146, 0.6);
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.photo-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #5A4C43;
+  text-align: center;
+  position: relative;
+  display: inline-block;
+  align-self: center;
+}
+.photo-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  left: -5%;
+  width: 110%;
+  height: 10px;
+  background: rgba(246, 218, 115, 0.6); /* 马克笔高亮 */
+  z-index: -1;
+  border-radius: 4px;
+}
+
+/* 提示框：黄色便利贴风格 */
+.photo-hint {
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 800;
+  color: #6B5D53;
+  text-align: center;
+  background: #FFF9D2; /* 便利贴黄 */
+  border: 1px solid #EBE1A7;
+  border-radius: 4px 12px 12px 4px; /* 模拟便利贴翘角 */
+  padding: 12px 16px;
+  box-shadow: 2px 4px 10px rgba(200, 180, 100, 0.2);
+  transform: rotate(-0.5deg);
+  margin-bottom: 10px;
+}
+
+/* 照片网格 */
+.photo-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-content: center;
+  padding: 10px; /* 给相片阴影留空间 */
+}
+
+.photo-panel--judge {
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.photo-panel--judge .photo-hint {
+  margin-top: 8px;
+}
+
+.photo-grid--judge {
+  flex: 1;
+  align-content: center;
+  gap: 12px;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.photo-panel--judge .photo-btn {
+  min-height: 170px;
+  padding: 10px 10px 14px;
+}
+
+.photo-panel--judge .plant-img {
+  min-height: 160px;
+  height: 186px;
+}
+
+/* 单个照片：拍立得相纸风格 */
+.photo-grid.photo-grid-count-1 {
+  grid-template-columns: minmax(0, 420px) !important;
   justify-content: center;
 }
 
-.record-card-wrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 280px;
+.photo-grid.photo-grid-count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-content: center;
+  width: min(100%, 860px);
   margin: 0 auto;
 }
 
-.record-card-img {
-  width: 100%;
-  height: 240px;
-  object-fit: contain;
-  background: #f8f9fa;
+.photo-btn {
+  border: 0;
+  padding: 10px 10px 24px 10px; /* 底部留白更多，像相纸 */
+  background: #FFF;
+  border: 1px solid #E3DBC7;
+  box-shadow: 2px 6px 14px rgba(90, 76, 67, 0.1);
+  border-radius: 4px;
   cursor: pointer;
-  transition: transform 0.2s;
-  border-radius: 8px 8px 0 0;
+  min-height: 130px;
+  transition: all 0.2s ease;
+}
+.plant-img {
+  width: 100%;
+  height: 100%;
+  min-height: 130px;
+  background: #F6F4E8;
+  border-radius: 2px !important; /* 覆盖原来的大圆角 */
 }
 
-.record-card-img:hover {
-  transform: scale(1.02);
-}
-
-.record-card-label {
+.empty-tip {
+  color: #A3968C;
+  border: 2px dashed #D4CBB3;
+  border-radius: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 0 0 8px 8px;
-}
-
-.record-index {
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
-}
-
-.record-hint-small {
-  font-size: 12px;
-  color: #999;
-}
-
-.empty-record {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #999;
-  padding: 40px;
-}
-
-.empty-record p {
-  margin-top: 12px;
-  font-size: 14px;
-}
-
-/* ================= 右上：修改后记录卡上传区 ================= */
-.new-record {
-  border-top: 4px solid #1989fa;
-}
-
-.upload-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* 第一步：拍照按钮区域 */
-.capture-step {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
   align-items: center;
   justify-content: center;
-  padding: 30px 0;
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  background: #FAF7EA;
 }
 
-.capture-hint {
+.pre-record-section {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
 }
 
-.capture-btn {
-  width: 80%;
-  max-width: 280px;
-  height: 56px;
+.photo-panel--judge .pre-record-section {
+  margin-top: -18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.photo-panel--judge .pre-record-title {
+  text-align: center;
+  transform: translateY(-12px);
+}
+
+.pre-record-title {
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 800;
+  color: #5A4C43;
+  text-align: left;
 }
 
-/* 第二步：预览和上传区域 */
-.preview-upload-step {
+.pre-record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.photo-panel--judge .pre-record-grid {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+  align-content: center;
+  flex: 1;
+  margin-top: -18px;
+}
+
+.pre-record-btn {
+  border: 0;
+  padding: 6px;
+  background: #FFF;
+  border: 1px solid #E3DBC7;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pre-record-img {
+  width: 100%;
+  height: 110px;
+  background: #F6F4E8;
+}
+
+.photo-panel--judge .pre-record-img {
+  height: clamp(170px, 32vh, 300px);
+}
+
+/* ========================================= */
+/*               第二页：选项打卡页              */
+/* ========================================= */
+.check-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 打卡面板（复用手账风格） */
+.evaluate-panel {
+  width: min(980px, 100%);
+  background: #FDFBF2;
+  border-radius: 16px;
+  padding: 30px 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  border: 2px dashed #D4CBB3;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  min-height: 0;
+  position: relative;
+}
+.evaluate-panel::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 120px;
+  height: 24px;
+  background-color: rgba(220, 203, 163, 0.7); /* 土黄胶带 */
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
+  border-radius: 2px;
+  z-index: 10;
 }
 
-.step-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: bold;
-  color: #07c160;
-  padding: 10px;
-  background: #f0f9eb;
-  border-radius: 8px;
+.level-1-title {
+  font-size: 32px;
+  line-height: 1.3;
+  font-weight: 900;
+  color: #5A4C43;
+  text-align: center;
 }
 
-.captured-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-}
-
-.captured-img {
-  width: 200px;
-  height: 200px;
-  object-fit: contain;
-  background: #f8f9fa;
-  border: 2px solid #ebedf0;
-  border-radius: 12px;
-}
-
-.preview-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  width: 100%;
-}
-
-.recapture-btn, .upload-btn {
-  min-width: 120px;
-}
-
-.uploaded-preview {
-  background: #f8f9fa;
-  border-radius: 12px;
+/* 内部选项框：像在纸上画的虚线区域 */
+.eval-box {
+  border: 2px solid #E3DBC7;
+  background: #FAF7EA;
+  border-radius: 14px;
   padding: 20px;
-  margin-top: 16px;
-}
-
-.preview-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.preview-image-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.preview-img {
-  width: 180px;
-  height: 180px;
-  object-fit: contain;
-  background: #fff;
-  border: 1px solid #ebedf0;
-  border-radius: 8px;
-}
-
-.upload-actions {
-  display: flex;
-  justify-content: center;
-}
-
-.delete-btn {
-  min-width: 140px;
-}
-
-.comparison-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: linear-gradient(135deg, #fff9e6 0%, #fff1c1 100%);
-  border-radius: 8px;
-  font-size: 14px;
-  color: #856404;
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* ================= 评价与提交板块 ================= */
-.evaluation-submit-section {
-  grid-column: span 2;
-  border-top: 4px solid #f2bd27;
-}
-
-.evaluation-submit-content {
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 减少间隙 */
-  padding: 14px; /* 减少padding */
+  gap: 14px;
 }
 
-/* 评价部分 - 左右并排布局 */
-.evaluation-part {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.evaluation-description {
-  margin-bottom: 8px;
-}
-
-.evaluation-description p {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-/* 评价卡片容器 - 左右并排 */
-.van-checkbox-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* 两列并排 */
-  gap: 10px; /* 卡片之间的间隙 */
-  margin-bottom: 8px;
-}
-
-.eval-card {
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-  cursor: pointer;
-  margin: 0; /* 移除垂直间距，由grid gap控制 */
-  min-height: 100px; /* 固定最小高度 */
-  display: flex;
-  align-items: center;
-}
-
-.eval-card:active {
-  transform: scale(0.98);
-}
-
-.eval-card.is-active {
-  background-color: #f0f9eb;
-  border-color: #07c160;
-}
-
-.eval-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-left: 10px;
-  flex: 1;
-}
-
-.eval-index {
-  font-size: 13px;
-  font-weight: bold;
-  color: #1989fa;
-}
-
-.eval-text {
-  font-size: 15px;
-  color: #323233;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-/* 平板优化 */
-@media (max-width: 1024px) {
-  .van-checkbox-group {
-    gap: 8px;
-  }
-  
-  .eval-card {
-    padding: 14px;
-    min-height: 90px;
-  }
-  
-  .eval-text {
-    font-size: 14px;
-  }
-}
-
-/* 手机端恢复垂直布局 */
-@media (max-width: 768px) {
-  .van-checkbox-group {
-    grid-template-columns: 1fr; /* 单列垂直布局 */
-    gap: 12px;
-  }
-  
-  .eval-card {
-    min-height: auto;
-  }
-}
-
-:deep(.van-checkbox__icon) {
+.level-2-title {
   font-size: 24px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #5C8D6D; /* 绿色副标题 */
+  margin-bottom: 6px;
 }
 
-/* 提交部分 */
-.submit-part {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ebedf0;
-}
-
-.next-step-btn {
-  margin: 0;
-}
-
-.progress-hint {
+/* 选项条：厚纸板按钮 */
+.check-row {
+  width: 100%;
+  border: 2px solid #E3DBC7;
+  border-radius: 12px;
+  background: #FDFBF2;
+  padding: 12px 16px;
+  text-align: left;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  color: #5A4C43;
+  box-shadow: 0 5px 0 #E3DBC7; /* 坚实的底部阴影 */
+  transition: all 0.15s ease;
+}
+
+.level-2-row {
+  font-size: 24px;
+  font-weight: 800;
+  min-height: 70px;
+  margin-top: 10px;
+}
+
+.level-3-row {
+  margin-left: 14px;
+  width: calc(100% - 14px);
+  font-size: 20px;
+  font-weight: 700;
+  min-height: 64px;
+}
+
+/* 选中状态：被按下，变绿 */
+.check-row.active {
+  background: #5C8D6D;
+  border-color: #3A664A;
+  color: #FDFBF2;
+  box-shadow: 0 0 0 #3A664A; /* 阴影消失 */
+  transform: translateY(5px); /* 位置下压 */
+}
+
+/* 禁用状态（互斥时）：变成灰暗的旧纸板 */
+.check-row.disabled {
+  background: #EBE5D3;
+  border-color: #D4CBB3;
+  color: #A3968C;
+  box-shadow: 0 5px 0 #D4CBB3;
+  cursor: not-allowed;
+}
+
+/* 右侧勾选框：圆形手绘盖章区 */
+.square {
+  width: 42px;
+  height: 42px;
+  border: 2px dashed #D4CBB3;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 8px;
+  color: #5C8D6D;
+  font-size: 24px;
+  font-weight: 900;
+  flex-shrink: 0;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+/* 选中后的打钩状态 */
+.check-row.active .square.checked {
+  border: none;
+  background: #FDFBF2;
+  color: #5C8D6D;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* 分组卡片样式 */
+.discovery-group,
+.no-discovery-group {
+  border: 2px solid #E3DBC7;
+  border-radius: 12px;
+  background: #FDFBF2;
   padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.progress-hint:first-of-type {
-  background: #f0f9eb;
-  color: #07c160;
+/* 取消提示卡片外观，保持正文样式 */
+.photo-hint {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  padding: 0 !important;
 }
 
-.progress-hint:last-of-type {
-  background: #f8f9fa;
-  color: #999;
+/* “暂无新发现”行文案强调 */
+.no-discovery-row {
+  color: #5C8D6D;
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 0;
 }
 
-/* ================= 响应式调整 ================= */
-@media (max-width: 768px) {
-  .grid-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 12px;
-    padding: 12px;
+
+/* =========== 按钮尺寸适配 =========== */
+:deep(.top-nav-action.van-button) {
+  height: 40px;
+  padding-inline: 18px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* =========== 响应式适配 =========== */
+@media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 14px;
+    padding-inline: 14px;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pre-record-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photo-panel--judge .pre-record-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .photo-panel--judge .pre-record-img {
+    height: clamp(150px, 28vh, 220px);
+  }
+
+  .photo-btn, .plant-img {
+    min-height: 100px;
+  }
+
+  .evaluate-panel {
+    padding: 20px 16px;
+  }
+
+  .level-1-title {
+    font-size: 26px;
+  }
+
+  .level-2-title, .level-2-row {
+    font-size: 20px;
+  }
+
+  .level-3-row {
+    font-size: 17px;
+    width: 100%;
+    margin-left: 0;
   }
   
-  .record-card-img {
-    max-height: 200px;
+  .check-row.active {
+    transform: translateY(4px);
   }
-  
-  .captured-img, .preview-img {
-    width: 140px;
-    height: 140px;
+  .check-row, .check-row.disabled {
+    box-shadow: 0 4px 0 #E3DBC7;
   }
-  
-  .capture-btn {
-    width: 90%;
-  }
-  
-  .evaluation-submit-section {
-    margin-top: 8px;
-  }
-  
-  .evaluation-submit-content {
-    padding: 16px;
+}
+
+/* 固定勾选态高度，避免选中时容器抖动 */
+.check-row.active {
+  transform: none !important;
+  box-shadow: 0 5px 0 #3A664A !important;
+}
+
+@media (max-width: 900px) {
+  .check-row.active {
+    transform: none !important;
+    box-shadow: 0 4px 0 #3A664A !important;
   }
 }
 </style>
+

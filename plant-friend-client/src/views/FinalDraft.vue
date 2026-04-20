@@ -1,589 +1,679 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <van-nav-bar title="环节 5：AI评语与荣誉时刻" fixed placeholder border />
-
-    <div class="split-layout" v-if="!showCertificate">
-      <!-- ================= 左侧：AI评语展示 ================= -->
-      <div class="left-panel">
-        <div class="ai-feedback-section">
-          <div class="ai-header">
-            <van-icon name="comment-o" color="#1989fa" />
-            <span>AI老师的作文评语</span>
-          </div>
-          
-          <div class="ai-content-wrapper">
-            <div v-if="aiFeedback && aiFeedback.length > 0" class="ai-content">
-              <div class="ai-avatar">
-                <van-icon name="cluster-o" size="24" color="#fff" />
-              </div>
-              <div class="ai-text-container">
-                <h3 class="ai-title">AI老师的悄悄话：</h3>
-                <div class="ai-text">{{ aiFeedback }}</div>
-              </div>
-            </div>
-            
-            <div v-else class="ai-loading">
-              <van-loading size="24px" color="#1989fa" vertical>
-                正在加载AI评语...
-              </van-loading>
-            </div>
-            
-            <!-- 鼓励提示 -->
-            <div class="encouragement-tip">
-              <van-icon name="bulb-o" color="#f2bd27" />
-              <p>根据AI评语修改后，你的作文一定会更加精彩！</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= 右侧：课堂完成确认与荣誉领取 ================= -->
-      <div class="right-panel">
-        <div class="panel-header">🏆 课堂完成，领取荣誉奖状</div>
-        
-        <div class="scroll-content">
-          <!-- 课堂完成确认信息 -->
-          <div class="final-confirm-section">
-            <div class="final-summary">
-              <van-icon name="checked" size="60" color="#07c160" class="check-icon" />
-              <h2 class="final-title">你的课堂任务已完成！</h2>
-              <p class="final-desc">
-                你已经完成了《我的植物朋友》全部课堂环节：
-              </p>
-              <ul class="final-steps">
-                <li>✓ 课前观察植物照片</li>
-                <li>✓ 记录卡修改完善</li>
-                <li>✓ 课堂试稿写作</li>
-                <li>✓ 资源包学习提升</li>
-                <li>✓ AI评价指导</li>
-              </ul>
-              <div class="course-note">
-                <van-icon name="info-o" color="#1989fa" />
-                <span>注：作文的最终定稿将在课后完成，老师会指导你进一步完善</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 提交按钮 -->
-        <div class="action-footer">
-          <van-button 
-            type="warning" 
-            block 
-            round 
-            size="large" 
-            @click="onFinalSubmit"
-            :loading="isSubmitting"
-            loading-text="正在领取奖状..."
-          >
-            我已阅读评语，领取荣誉奖状
-          </van-button>
-        </div>
-      </div>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">我与植物朋友共成长</div>
+      <van-button
+        v-if="!showCertificate"
+        type="primary"
+        round
+        size="small"
+        :loading="isSubmitting"
+        :disabled="!canGoNext"
+        loading-text="提交中"
+        @click="submitStage5"
+        class="top-nav-action final-submit-attention"
+      >
+        提交
+      </van-button>
+      <span v-else class="top-nav-spacer" aria-hidden="true"></span>
     </div>
 
-    <!-- ================= 核心：电子奖状与撒花展示区 ================= -->
-    <div class="certificate-container" v-else>
-      <div class="certificate-card">
-        <div class="cert-border">
-          <div class="cert-content">
-            <div class="cert-header">荣 誉 奖 状</div>
-            <div class="cert-body">
-              <p class="cert-name"><span>{{ userStore.studentName }}</span> 同学：</p>
-              <p class="cert-text">
-                在《我的植物朋友》互动课堂中，你通过细致的观察和生动的描写，成功完成了一篇优秀的习作。表现出色，特发此证，以资鼓励！
-              </p>
-              <p class="cert-title">小小植物学家</p>
-            </div>
-            <div class="cert-footer">
-              <p>语文互动课堂项目组</p>
-              <p>{{ currentDate }}</p>
-            </div>
-          </div>
+    <div v-if="!showCertificate" class="main-board">
+      <div class="vine-stage">
+        <div class="stars-summary">当前总计获得：<span>{{ totalStars }}</span> 缕阳光</div>
+        <div class="trees-scene" aria-hidden="true"></div>
+
+        <div class="tree-label tree-a">
+          <div class="label-line">了解 <span class="label-reward">获得1</span> <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
         </div>
+
+        <div class="tree-label tree-b">
+          <div class="label-line">记录 <span class="label-reward">获得1</span> <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
+        </div>
+
+        <div class="tree-label tree-c">
+          <div class="label-line">试写</div>
+        </div>
+
+        <section class="stage5-check-card">
+          <div class="eval-box">
+            <div class="group-title">1.我试着写清楚了。</div>
+            
+            <button
+              type="button"
+              class="check-row sub"
+              :class="{ active: hasMultiaspect, disabled: false }"
+              @click="toggleMultiaspect"
+            >
+              <span>(1)我从多方面介绍了植物朋友。</span>
+              <span class="square" :class="{ checked: hasMultiaspect }">
+                {{ hasMultiaspect ? '✓' : '' }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="check-row sub"
+              :class="{ active: hasOrderly, disabled: false }"
+              @click="toggleOrderly"
+            >
+              <span>(2)我是把几个方面连起来写的。</span>
+              <span class="square" :class="{ checked: hasOrderly }">
+                {{ hasOrderly ? '✓' : '' }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="check-row main"
+              :class="{ active: hasShared }"
+              @click="toggleShared"
+            >
+              <span>2.我分享了我的习作。</span>
+              <span class="square" :class="{ checked: hasShared }">
+                {{ hasShared ? '✓' : '' }}
+              </span>
+            </button>
+          </div>
+          <div class="stage5-star-tip">试写环节获得：{{ stage5Stars }} 缕阳光 <img src="/sun.svg" alt="" class="sun-inline-icon" /></div>
+        </section>
       </div>
-      
-      <div class="final-actions">
-        <van-button icon="share-o" type="primary" round plain @click="shareCert">分享我的荣誉</van-button>
-        <van-button icon="arrow-left" type="default" round plain @click="goBackToAI">返回查看AI评语</van-button>
-        <p class="final-tip">老师在大屏上也能看到你的作品哦！</p>
+
+    </div>
+
+    <div v-else class="certificate-wrap">
+      <div class="certificate-scene" aria-hidden="true"></div>
+      <div class="certificate-copy">
+        <p class="cert-main-text">
+          亲爱的 <span class="strong-name">{{ displayName }}</span> 同学，在今天的学习中，你种下了一颗种子，并且一共为它获得了
+          <span class="strong-num">{{ totalStars }}</span> 缕阳光，在你的呵护下，它已经生根发芽……
+        </p>
+      </div>
+      <div class="certificate-book-area" aria-hidden="true">
+        <div class="certificate-book-cover"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useUserStore } from '../store/user';
+import { computed, ref } from 'vue';
 import axios from 'axios';
 import { showToast } from 'vant';
-import confetti from 'canvas-confetti'; // 导入撒花插件
-import { submitFinalApi } from '../api/student';
+import confetti from 'canvas-confetti';
+import { useUserStore } from '../store/user';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 
-// AI评语相关状态
-const aiFeedback = ref('');
-const isLoadingAI = ref(true);
 const isSubmitting = ref(false);
-const currentDate = new Date().toLocaleDateString();
-
-// 控制是否显示奖状（总是先显示AI评语页面）
 const showCertificate = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.finalDraft));
 
-// 页面加载时获取AI评语
-onMounted(async () => {
-  await fetchAIFeedback();
-});
+const hasMultiaspect = ref(false);  
+const hasOrderly = ref(false);      
+const hasShared = ref(false);      
 
-// 获取AI评语 - 参考TeacherDash.vue的实现方式
-const fetchAIFeedback = async () => {
-  isLoadingAI.value = true;
-  try {
-    // 首选方案：通过教师端接口获取学生详情（与TeacherDash.vue一致）
-    const teacherResponse = await axios.get(`/api/teacher/dashboard/student-detail/${userStore.studentId}`);
-    if (teacherResponse.data && teacherResponse.data.ai_feedback_text) {
-      aiFeedback.value = teacherResponse.data.ai_feedback_text;
-      console.log('通过教师端接口成功获取AI评语');
-      return;
-    }
-    
-    // 备选方案：通过学生信息接口获取AI评语
-    try {
-      const studentResponse = await axios.get(`/api/student/student/info/${userStore.studentId}`);
-      if (studentResponse.data && studentResponse.data.ai_feedback) {
-        aiFeedback.value = studentResponse.data.ai_feedback;
-        console.log('通过学生信息接口成功获取AI评语');
-        return;
-      }
-    } catch (studentError) {
-      console.warn('通过学生信息接口获取AI评语失败:', studentError.message);
-    }
-    
-    // 如果所有API都失败，显示详细且有意义的默认评语
-    aiFeedback.value = `✨ 亲爱的${userStore.studentName || '同学'}，AI老师看到了你的努力！你的作文观察细致，描写生动。如果在描写植物叶子的时候，能加入"摸上去是什么感觉"的细节，文章会更精彩哦！继续加油！\n\n📝 写作小提示：\n1. 多使用比喻句（如：叶子像小手掌）\n2. 加入五感描写（看、闻、摸、听、尝）\n3. 写出自己的真实感受\n4. 保持工整的字迹`;
-  } catch (error) {
-    console.warn('获取AI评语失败:', error);
-    aiFeedback.value = `✨ ${userStore.studentName || '同学'}的作文很用心！观察到植物的细节，也写了自己的感受。继续努力，你会写得更好！\n\n💡 改进建议：\n• 可以多描述植物的颜色变化\n• 加入季节对植物的影响\n• 写出植物给你的启发`;
-  } finally {
-    isLoadingAI.value = false;
-  }
+const toggleMultiaspect = () => {
+  hasMultiaspect.value = !hasMultiaspect.value;
 };
 
-// --- 最终提交并触发撒花 ---
-const onFinalSubmit = async () => {
-  const randomDelay = Math.floor(Math.random() * 2000);
-  await new Promise(resolve => setTimeout(resolve, randomDelay));
+const toggleOrderly = () => {
+  hasOrderly.value = !hasOrderly.value;
+};
+
+const toggleShared = () => {
+  hasShared.value = !hasShared.value;
+};
+
+const stage1Stars = computed(() => Number(userStore.stage1Stars ?? 1));
+const stage3Stars = computed(() => Number(userStore.stage3Stars ?? 0));
+
+const stage5Stars = computed(() => {
+  return Number(hasMultiaspect.value) + Number(hasOrderly.value) + Number(hasShared.value);
+});
+
+const totalStars = computed(() => stage1Stars.value + stage3Stars.value + stage5Stars.value);
+
+const displayName = computed(() => userStore.studentName || '小朋友');
+const launchConfetti = () => {
+  const end = Date.now() + 2200;
+  const defaults = { startVelocity: 35, spread: 100, ticks: 80, zIndex: 1000 };
+
+  const timer = setInterval(() => {
+    const left = end - Date.now();
+    if (left <= 0) {
+      clearInterval(timer);
+      return;
+    }
+
+    const ratio = left / 2200;
+    const count = Math.max(18, Math.floor(60 * ratio));
+
+    confetti({ ...defaults, particleCount: count, origin: { x: 0.15, y: 0.15 } });
+    confetti({ ...defaults, particleCount: count, origin: { x: 0.85, y: 0.2 } });
+  }, 220);
+};
+
+const submitStage5 = async () => {
+  if (!canGoNext.value) return;
+  if (isSubmitting.value) return;
 
   isSubmitting.value = true;
   try {
-    // 提交环节5完成状态 - 使用统一的API函数
-    await submitFinalApi(userStore.studentId);
-
-    // 更新用户状态为已完成
-    userStore.finishAll();
-
-    // 触发撒花特效
-    triggerConfetti();
-
-    // 显示奖状
-    showCertificate.value = true;
-    
-    showToast({ message: '太棒了！你真了不起！', type: 'success' });
-  } catch (err) {
-    console.warn('提交环节5失败:', err);
-    // 记录详细的错误信息
-    if (err.response) {
-      console.error('错误状态码:', err.response.status);
-      console.error('错误响应:', err.response.data);
-      console.error('请求数据:', { student_id: userStore.studentId });
+    const checks = [];
+    if (hasMultiaspect.value) {
+      checks.push('(1)我从多方面介绍了植物朋友');
     }
-    // 即使提交失败，也显示奖状（演示用）
+    if (hasOrderly.value) {
+      checks.push('(2)我是把几个方面连起来写的。');
+    }
+    if (hasShared.value) {
+      checks.push('2.我分享了我的习作。');
+    }
+    
+    await axios.post('/api/student/stage5/submit', {
+      student_id: String(userStore.studentId || ''),
+      stage5_checks: checks,
+      total_stars: totalStars.value,
+    });
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      await axios.post('/api/student/stage5/final', {
+        student_id: String(userStore.studentId || ''),
+      });
+    } else {
+      showToast('提交失败，请重试');
+      isSubmitting.value = false;
+      return;
+    }
+  }
+
+  if (typeof userStore.finishAll === 'function') {
     userStore.finishAll();
-    triggerConfetti();
-    showCertificate.value = true;
-    showToast({ message: '恭喜完成课程！', type: 'success' });
-  } finally {
-    isSubmitting.value = false;
   }
-};
 
-// 页面加载时检查是否已提交，自动触发撒花
-onMounted(() => {
-  // 如果刷新后发现已经提交过了，可以自动再撒一小次花
-  if (userStore.hasFinalSubmitted) {
-    triggerConfetti(); 
-  }
-});
-
-// 撒花函数
-const triggerConfetti = () => {
-  const duration = 3 * 1000;
-  const animationEnd = Date.now() + duration;
-  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-  const interval = setInterval(function() {
-    const timeLeft = animationEnd - Date.now();
-    if (timeLeft <= 0) return clearInterval(interval);
-
-    const particleCount = 50 * (timeLeft / duration);
-    confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
-  }, 250);
-};
-
-const shareCert = () => showToast('老师已在主屏幕展示你的荣誉！');
-
-// 返回查看AI评语
-const goBackToAI = () => {
-  showCertificate.value = false;
+  showCertificate.value = true;
+  launchConfetti();
+  showToast({ message: '恭喜你完成全部挑战！', type: 'success' });
+  isSubmitting.value = false;
 };
 </script>
 
 <style scoped>
-.stage-container { 
-  height: 100%; 
-  display: flex; 
-  flex-direction: column; 
-  background-color: #f7f8fa; 
-}
-
-.split-layout { 
-  flex: 1; 
-  display: flex; 
-  overflow: hidden; 
-}
-
-/* ================= 左侧：AI评语展示区 ================= */
-.left-panel { 
-  flex: 1; 
-  background-color: #f0f7ff; 
-  display: flex; 
-  flex-direction: column; 
-  padding: 20px; 
-  overflow: hidden;
-}
-
-.ai-feedback-section {
-  flex: 1;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+/* =========== 全局背景手账化 =========== */
+.stage-container {
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #F4F1E1; /* 复古牛皮纸色底 */
 }
 
-.ai-header {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  padding: 16px;
-  border-bottom: 1px solid #f2f3f5;
-  display: flex;
+/* =========== 顶部导航栏 =========== */
+.top-nav {
+  min-height: 56px;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
   gap: 8px;
-}
-
-.ai-content-wrapper {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.ai-content {
-  display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f3e7ff 0%, #e2e0ff 100%);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(114, 50, 221, 0.1);
-}
-
-.ai-avatar {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  background: linear-gradient(135deg, #7232dd, #1989fa);
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(114, 50, 221, 0.3);
-}
-
-.ai-text-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ai-title {
-  color: #531dab;
-  font-size: 16px;
-  margin: 0;
-  font-weight: bold;
-}
-
-.ai-text {
-  color: #391085;
-  font-size: 15px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  font-weight: 500;
-}
-
-.ai-loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
-}
-
-.encouragement-tip {
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e8 100%);
-  border-left: 4px solid #07c160;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.encouragement-tip p {
-  font-size: 14px;
-  color: #333;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ================= 右侧：定稿确认与提交区 ================= */
-.right-panel { 
-  flex: 1.2; 
-  background-color: #fff; 
-  display: flex; 
-  flex-direction: column; 
-  border-left: 1px solid #ebedf0; 
-}
-
-.panel-header { 
-  font-size: 20px; 
-  font-weight: bold; 
-  padding: 20px; 
-  color: #323233; 
-  border-bottom: 1px solid #f2f3f5; 
-  flex-shrink: 0; 
-}
-
-.scroll-content { 
-  flex: 1; 
-  padding: 20px; 
-  display: flex; 
-  flex-direction: column; 
-  overflow-y: auto; 
-}
-
-/* 定稿确认区域 */
-.final-confirm-section {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.final-summary {
-  text-align: center;
-  padding: 24px;
-  background: linear-gradient(135deg, #fff9e6 0%, #fff1c1 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(242, 189, 39, 0.1);
-}
-
-.check-icon {
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float { 
-  0%, 100% { transform: translateY(0); } 
-  50% { transform: translateY(-15px); } 
-}
-
-.final-title {
-  font-size: 22px;
-  color: #856404;
-  margin: 0 0 16px 0;
-}
-
-.final-desc {
-  font-size: 16px;
-  color: #856404;
-  margin: 0 0 16px 0;
-  font-weight: 500;
-}
-
-.final-steps {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-  display: inline-block;
-}
-
-.final-steps li {
-  font-size: 14px;
-  color: #856404;
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.course-note {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f0f7ff;
-  border-radius: 8px;
-  border-left: 4px solid #1989fa;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  color: #333;
-  line-height: 1.5;
-}
-
-.course-note span {
-  flex: 1;
-}
-
-
-.action-footer { 
-  padding: 25px; 
-  background-color: #fff; 
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.03); 
+  background: #FDFBF2; 
+  border-bottom: 2px dashed #D4CBB3; 
+  box-shadow: 0 4px 10px rgba(90, 76, 67, 0.05); 
   flex-shrink: 0;
+  z-index: 10;
 }
 
-/* ================= 奖状样式 ================= */
-.certificate-container { 
-  flex: 1; 
-  background: #555; 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center; 
-  padding: 20px; 
+.top-nav-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #5A4C43; 
+  letter-spacing: 1px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.certificate-card { 
-  width: 90%; 
-  max-width: 600px; 
-  background: #fff; 
-  padding: 15px; 
-  border-radius: 4px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-  transform: rotate(-1deg); 
+.top-nav-spacer {
+  width: 100%;
 }
 
-.cert-border { 
-  border: 10px double #f2bd27; 
-  padding: 20px; 
-  height: 100%; 
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
 }
 
-.cert-content { 
-  border: 2px solid #f2bd27; 
-  padding: 30px; 
-  background: #fffcf5; 
-  text-align: center; 
-  position: relative; 
+/* =========== 3D纸板按钮 & 跳动动画 =========== */
+:deep(.van-button--primary) {
+  background-color: #5C8D6D !important;
+  border-color: #5C8D6D !important;
+  box-shadow: 0 4px 0 #3A664A !important;
+  color: #FDFBF2 !important;
+  transition: all 0.1s;
 }
 
-.cert-header { 
-  font-size: 40px; 
-  color: #d4237a; 
-  font-family: "SimSun", serif; 
-  font-weight: bold; 
-  margin-bottom: 30px; 
-  letter-spacing: 10px; 
+:deep(.van-button--primary:active) {
+  transform: translateY(4px) !important;
+  box-shadow: 0 0 0 #3A664A !important;
 }
 
-.cert-body { 
-  text-align: left; 
-  line-height: 2; 
-  color: #333; 
+:deep(.van-button--primary:disabled) {
+  background-color: #E3DBC7 !important;
+  border-color: #E3DBC7 !important;
+  color: #A3968C !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important; /* 禁用时停止跳动 */
 }
 
-.cert-name { 
-  font-size: 22px; 
-  margin-bottom: 15px; 
+/* 手账风格的“引人注意”动画（模拟按钮物理弹跳） */
+:deep(.final-submit-attention.van-button:not(:disabled)) {
+  animation: paperBtnPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-.cert-name span { 
-  text-decoration: underline; 
-  font-weight: bold; 
-  padding: 0 10px; 
+@keyframes paperBtnPulse {
+  0%, 100% { transform: translateY(0); box-shadow: 0 4px 0 #3A664A; }
+  50% { transform: translateY(-3px); box-shadow: 0 7px 0 #3A664A; } /* 微微弹起 */
 }
 
-.cert-text { 
-  text-indent: 2em; 
-  font-size: 18px; 
-  margin-bottom: 30px; 
+
+/* ================================================== */
+/*               第一部分：成长地图视图                 */
+/* ================================================== */
+.main-board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  box-sizing: border-box;
 }
 
-.cert-title { 
-  text-align: center; 
-  font-size: 32px; 
-  color: #f2bd27; 
-  font-weight: bold; 
-  margin-top: 40px; 
-  font-family: "KaiTi"; 
+/* 左上角总计标签：手账小挂签 */
+.stars-summary {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 3;
+  background: #FDFBF2;
+  border: 2px dashed #D4CBB3;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #5A4C43;
+  text-align: left;
+  box-shadow: 2px 4px 10px rgba(90, 76, 67, 0.1);
+  transform: rotate(-1deg);
 }
 
-.cert-footer { 
-  text-align: right; 
-  margin-top: 40px; 
-  font-size: 16px; 
+.stars-summary span {
+  color: #D98C3A; /* 暖橘色太阳数 */
+  font-size: 26px;
+  font-weight: 900;
 }
 
-.final-actions { 
-  margin-top: 30px; 
-  text-align: center; 
-  color: #fff; 
+/* 地图背景：变成一张贴上去的剪贴画 */
+.vine-stage {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 4px solid #FDFBF2; /* 相纸白边 */
+  box-shadow: 0 0 0 1px #E3DBC7, 4px 12px 30px rgba(90, 76, 67, 0.15); /* 双层边缘+阴影 */
+  overflow: hidden;
 }
 
-.final-tip { 
-  margin-top: 15px; 
-  opacity: 0.7; 
-  font-size: 14px; 
+.trees-scene {
+  position: absolute;
+  inset: 0;
+  background-image: url('/final-draft/three-trees.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .split-layout {
-    flex-direction: column;
+/* 树木路标：贴合背景木牌 */
+.tree-label {
+  position: absolute;
+  z-index: 2;
+  width: 200px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #5f3e23;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 235, 210, 0.5);
+}
+
+.tree-label .label-line {
+  font-size: 33px;
+  font-weight: 900;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tree-label .label-reward {
+  font-size: 0.68em;
+  color: #a6661f;
+  font-weight: 900;
+}
+
+.tree-a { left: 26.5%; top: 42.5%; transform: rotate(-1deg); }
+.tree-b { left: 26.5%; top: 53%; transform: rotate(0.4deg); }
+.tree-c { left: 26.5%; top: 62.5%; transform: rotate(-0.5deg); }
+
+/* --- 试写评价面板（右侧留空区） --- */
+.stage5-check-card {
+  position: absolute;
+  z-index: 2;
+  right: 2.2%;
+  top: 50%;
+  bottom: auto;
+  width: min(36vw, 470px);
+  background: #FDFBF2;
+  border: 2px dashed #D4CBB3;
+  border-radius: 16px;
+  padding: 24px 18px;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  transform: translateY(-50%) scale(1.02);
+  transform-origin: center right;
+}
+
+/* 胶带装饰 */
+.stage5-check-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(2deg);
+  width: 100px;
+  height: 24px;
+  background-color: rgba(135, 179, 146, 0.6);
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #5A4C43;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.eval-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #5C8D6D; /* 绿色标题 */
+}
+
+/* 选项条：厚纸板按钮 */
+.check-row {
+  width: 100%;
+  border: 2px solid #E3DBC7;
+  border-radius: 10px;
+  background: #FAF7EA;
+  padding: 14px 16px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  min-height: 66px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #5A4C43;
+  box-shadow: 0 4px 0 #E3DBC7; /* 坚实阴影 */
+  transition: all 0.1s ease;
+}
+
+.check-row.sub {
+  margin-left: 8px;
+  width: calc(100% - 8px);
+  font-size: 18px;
+  font-weight: 700;
+  min-height: 58px;
+}
+
+.check-row.main {
+  color: #5C8D6D;
+}
+
+/* 选中状态：按压 */
+.check-row.active {
+  background: #5C8D6D;
+  border-color: #3A664A;
+  color: #FDFBF2;
+  box-shadow: 0 4px 0 #3A664A;
+  transform: none;
+}
+
+/* 勾选框 */
+.square {
+  width: 44px;
+  height: 44px;
+  border: 2px dashed #D4CBB3;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #5C8D6D;
+  font-size: 24px;
+  font-weight: 900;
+  flex-shrink: 0;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.check-row.active .square.checked {
+  border: none;
+  background: #FDFBF2;
+  color: #5C8D6D;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.stage5-star-tip {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #D98C3A;
+  background: #FFF9D2; /* 浅黄高亮 */
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.sun-inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.08em;
+}
+
+
+/* ================================================== */
+/*               第二部分：荣誉奖状视图                 */
+/* ================================================== */
+.certificate-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  background: #dff3ff;
+}
+
+.certificate-scene {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.32) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.02) 100%),
+    url('/final-draft/background.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.certificate-copy {
+  position: absolute;
+  z-index: 2;
+  left: 5.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(36vw, 520px);
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 30px rgba(22, 48, 35, 0.16);
+  backdrop-filter: blur(3px);
+}
+
+.cert-main-text {
+  margin: 0;
+  color: #274c37;
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.75;
+  font-weight: 800;
+  text-align: left;
+  text-indent: 2em;
+}
+
+.certificate-book-area {
+  position: absolute;
+  z-index: 2;
+  right: 7vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(34vw, 500px);
+}
+
+.certificate-book-cover {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  border: 0;
+  background-image: url('/final-draft/book-page.png');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: transparent;
+}
+
+
+/* 高亮文字：马克笔下划线 */
+.strong-name,
+.strong-num {
+  font-weight: 900;
+  color: #5C8D6D;
+  padding: 0 2px;
+  position: relative;
+  display: inline;
+}
+.strong-name::after,
+.strong-num::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(246, 218, 115, 0.5); /* 鹅黄下划线 */
+  z-index: -1;
+  border-radius: 4px;
+}
+
+
+/* =========== 组件覆盖尺寸 =========== */
+:deep(.van-button--large) {
+  height: 54px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+:deep(.top-nav-action.van-button) {
+  height: 40px;
+  padding-inline: 16px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+
+/* =========== 响应式适配 =========== */
+@media (max-width: 1200px) {
+  .tree-label { width: 180px; }
+  .tree-label .label-line { font-size: 30px; }
+  .stage5-check-card { width: min(38vw, 430px); right: 1.6%; top: 50%; bottom: auto; transform: translateY(-50%) scale(0.95); }
+  .tree-a { left: 23%; top: 41%; }
+  .tree-b { left: 23%; top: 52.3%; }
+  .tree-c { left: 23%; top: 63.5%; }
+  .certificate-copy { width: min(40vw, 500px); left: 4.8%; }
+  .cert-main-text { font-size: clamp(20px, 2.1vw, 30px); }
+  .certificate-book-area { right: 4vw; width: min(36vw, 460px); }
+}
+
+@media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
   }
-  
-  .left-panel, .right-panel {
-    flex: 1;
+  :deep(.top-nav-action.van-button) {
+    font-size: 14px;
+    padding-inline: 12px;
   }
+  .main-board { padding: 12px; }
+  .stars-summary { font-size: 16px; left: 10px; top: 10px; padding: 6px 10px; }
+  .stars-summary span { font-size: 20px; }
   
-  .right-panel {
-    border-left: none;
-    border-top: 1px solid #ebedf0;
+  .stage5-check-card {
+    right: 4%;
+    width: 92%;
+    top: auto;
+    bottom: 5%;
+    transform: none;
+    padding: 16px;
   }
+  .check-row { min-height: 50px; font-size: 16px; }
+  .check-row.sub { font-size: 15px; }
   
-  .ai-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  .tree-label .label-line { font-size: 20px; }
+  .tree-a { left: 7%; top: 44%; width: 120px; }
+  .tree-b { left: 7%; top: 53.5%; width: 120px; }
+  .tree-c { left: 7%; top: 63%; width: 120px; }
+
+  .certificate-copy {
+    left: 4%;
+    right: 4%;
+    top: 14%;
+    width: auto;
+    transform: none;
+    padding: 14px 14px;
+  }
+  .cert-main-text { font-size: 18px; line-height: 1.65; }
+  .certificate-book-area {
+    right: 4%;
+    top: auto;
+    bottom: 4%;
+    transform: none;
+    width: min(42vw, 300px);
   }
 }
 </style>

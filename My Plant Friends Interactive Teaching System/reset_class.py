@@ -1,65 +1,117 @@
 import asyncio
+from pathlib import Path
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# --- 配置区 ---
-MONGO_DETAILS = "mongodb://localhost:27017" 
-DB_NAME = "composition_db"                       
+# MongoDB config
+MONGO_DETAILS = "mongodb://localhost:27017"
+DB_NAME = "composition_db"
 
-async def reset_class_data():
+# Local media directory (offline mode)
+LOCAL_MEDIA_DIR = Path(__file__).resolve().parent / "local_media"
+PROCESS_MEDIA_STEMS = {"record_card", "draft", "final"}
+
+
+def clear_process_media_files() -> int:
     """
-    运维级脚本：一键清空全班上课产生的过程数据和状态。
-    保留：学号、姓名、教师密码、课前预置的照片和视频。
+    Delete only classroom process images in local_media:
+    - delete: record_card.*, draft.*, final.*
+    - keep:   pre_plant_1/2/3.*
     """
-    print("⚠️ 正在连接数据库...")
+    if not LOCAL_MEDIA_DIR.exists():
+        return 0
+
+    removed = 0
+    for student_dir in LOCAL_MEDIA_DIR.iterdir():
+        if not student_dir.is_dir():
+            continue
+
+        for file_path in student_dir.iterdir():
+            if not file_path.is_file():
+                continue
+
+            if file_path.stem.lower() in PROCESS_MEDIA_STEMS:
+                try:
+                    file_path.unlink()
+                    removed += 1
+                except Exception:
+                    # Keep reset robust even when a file is locked.
+                    pass
+
+    return removed
+
+
+async def reset_class_data() -> None:
+    """
+    Reset classroom process data for offline/LAN mode.
+
+    Keep:
+    - student_id, student_name
+    - pre_plant_1, pre_plant_2, pre_plant_3
+    - admin_config
+
+    Reset:
+    - login state and stage
+    - stage1/stage3/stage5 selections and stars
+    - resource click stats and completion flags
+    - total stars and certificate flags
+    - remove legacy process image URL fields (record_card_img/draft_img/final_img)
+
+    Optional:
+    - clear process image files under local_media
+    """
+    print("Connecting database...")
     client = AsyncIOMotorClient(MONGO_DETAILS)
     db = client[DB_NAME]
-    
-    # 确认是否真的要重置
-    confirm = input("🚨 危险操作：即将清空全班提交的作业、评价和通关记录！\n确认执行请输入 'yes'：")
-    if confirm.lower() != 'yes':
-        print("已取消重置操作。")
+
+    confirm = input(
+        "Danger: this will reset class process data (keep student basic info and pre-media).\n"
+        "Type 'yes' to continue: "
+    )
+    if confirm.strip().lower() != "yes":
+        print("Cancelled.")
         client.close()
         return
 
-    print("正在清空课堂数据...")
-    
-    # 执行批量更新
-    result = await db.students.update_many(
-        {}, # 空条件，代表更新集合中的所有文档
-        {"$set": {
-            # 1. 状态归零
-            "is_logged_in": False,          # 全部强制下线 (大屏格子变灰)
-            "current_stage": "0",           # 进度回到起点
-            
-            # 2. 环节 1-2 数据清空
-            "sensory_evaluations": [],      # 清空感官勾选
-            "dimension_evaluations": [],    # 清空评价维度勾选
-            "record_card_img": "",          # 清空课中修改的记录卡照片
-            
-            # 3. 环节 3 数据清空
-            "draft_img": "",                # 清空初稿照片
-            "has_completed_ai": False,      # 清空 AI 批改状态 (大屏环形图归零)
-            "ai_feedback_text": "",         # 清空 AI 评语
-            
-            # 4. 环节 4 数据清空
-            "has_viewed_resources": False,  # 清空资源包通关状态 (大屏通关人数归零)
-            "resource_click_stats": {},     # 清空资源点击热度
-            
-            # 5. 环节 5 数据清空 (🏆 奖杯消失的关键)
-            "final_img": "",                # 清空最终定稿照片
-            
-            # --- 注意：绝不触碰 pre_plant_1 等课前预置字段 ---
-        }
-        }
+    clear_media = (
+        input(
+            "Also clear local_media process images (record_card/draft/final)?\n"
+            "pre_* files will be kept. Type 'yes' to continue: "
+        )
+        .strip()
+        .lower()
+        == "yes"
     )
 
-    print(f"✅ 成功重置了 {result.modified_count} 位学生的课堂数据！")
-    print("🎉 大屏上的奖杯、在线状态和统计表格已全部归零。")
-    
-    
+    print("Resetting students process fields...")
+
+    set_fields = {
+        "is_logged_in": False,
+        "current_stage": "0",
+        "sensory_evaluations": [],
+        "stage1_stars": 0,
+        "dimension_evaluations": [],
+        "stage3_stars": 0,
+        "has_viewed_resources": False,
+        "resource_click_stats": {},
+        "stage5_checks": [],
+        "stage5_stars": 0,
+        "total_stars": 0,
+        "has_claimed_certificate": False,
+        "last_active_time": None,
+    }
+
+    result = await db.students.update_many({}, {"$set": set_fields})
+
+    print(f"Done. Updated students: {result.modified_count}")
+    print("Kept: student_id/student_name and pre_* media fields.")
+
+    if clear_media:
+        removed = clear_process_media_files()
+        print(f"Cleared local process image files: {removed}")
 
     client.close()
 
+
 if __name__ == "__main__":
-    # 运行异步函数
     asyncio.run(reset_class_data())

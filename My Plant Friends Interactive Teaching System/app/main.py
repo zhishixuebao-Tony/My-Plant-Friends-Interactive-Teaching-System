@@ -1,41 +1,48 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
 from app.core.config import settings
-from app.db.mongodb import connect_to_mongo, close_mongo_connection
-from app.api.endpoints import student_flow, teacher_dash, ai_agent, ws_routes
-from fastapi.middleware.cors import CORSMiddleware
-from app.db.mongodb import db_instance 
+from app.db.mongodb import connect_to_mongo, close_mongo_connection, db_instance
+from app.api.endpoints import student_flow, teacher_dash, ws_routes, ops_control
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=['*'],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
-@app.on_event("startup")
-async def startup(): await connect_to_mongo()
+media_dir = Path(settings.LOCAL_MEDIA_DIR)
+media_dir.mkdir(parents=True, exist_ok=True)
+media_prefix = "/" + str(settings.LOCAL_MEDIA_URL_PREFIX).strip("/")
+app.mount(media_prefix, StaticFiles(directory=str(media_dir)), name="local_media")
 
-@app.on_event("shutdown")
-async def shutdown(): await close_mongo_connection()
 
-@app.on_event("startup")
+@app.on_event('startup')
+async def startup():
+    await connect_to_mongo()
+
+
+@app.on_event('shutdown')
+async def shutdown():
+    await close_mongo_connection()
+
+
+@app.on_event('startup')
 async def startup_db_client():
-    # ... 原有的数据库连接代码 ...
-    
-    # 初始化教师密码（如果不存在则创建）
     admin_col = db_instance.db.admin_config
-    existing = await admin_col.find_one({"key": "teacher_password"})
+    existing = await admin_col.find_one({'key': 'teacher_password'})
     if not existing:
-        await admin_col.insert_one({"key": "teacher_password", "value": "123456"})
-        print("✅ 教师端初始密码 123456 已存入数据库")
+        await admin_col.insert_one({'key': 'teacher_password', 'value': '123456'})
 
-# 挂载路由 (按角色和功能划分)
-app.include_router(student_flow.router, prefix="/api/student", tags=["1. 学生流程控制"])
-app.include_router(ai_agent.router, prefix="/api/ai", tags=["2. AI 作文批改"])
-app.include_router(teacher_dash.router, prefix="/api/teacher", tags=["3. 教师端数据展示"])
-app.include_router(ws_routes.router, prefix="/ws", tags=["4. 实时通讯"])
+
+app.include_router(student_flow.router, prefix='/api/student', tags=['student_flow'])
+app.include_router(teacher_dash.router, prefix='/api/teacher', tags=['teacher_dashboard'])
+app.include_router(ops_control.router, prefix='/api/ops', tags=['ops_control'])
+app.include_router(ws_routes.router, prefix='/ws', tags=['websocket'])

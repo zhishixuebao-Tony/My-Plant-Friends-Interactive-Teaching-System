@@ -1,1013 +1,353 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <!-- 顶部导航 -->
-    <van-nav-bar 
-      title="环节 1：我的感官观察站" 
-      fixed 
-      placeholder 
-      border
-      left-arrow
-      @click-left="$router.back()"
-    >
-      <template #right>
-        <van-icon name="question-o" size="18" @click="showHelp" />
-      </template>
-    </van-nav-bar>
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">了解我的植物朋友</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        :disabled="checkedItems.length === 0 || !canGoNext"
+        :loading="loading"
+        @click="onNextStep"
+        class="top-nav-action"
+      >
+        提交
+      </van-button>
+    </div>
 
-    <div class="split-layout">
-      <!-- ================= 左侧：植物观察区 ================= -->
-      <div class="left-panel">
-        <!-- 植物照片展示区 -->
-        <div class="photo-section" v-if="userStore.prePlantPhotos && userStore.prePlantPhotos.length > 0">
-          <div class="section-header">
-            <van-icon name="photo-o" color="#07c160" />
-            <span>我的植物照片</span>
-            <span class="photo-count">{{ userStore.prePlantPhotos.length }}张</span>
-          </div>
-          
-          <div class="photo-gallery">
-            <van-swipe 
-              class="photo-swipe" 
-              :autoplay="isAutoPlaying ? 3500 : false" 
-              indicator-color="#07c160"
-              :height="photoHeight"
-            >
-              <van-swipe-item v-for="(img, index) in userStore.prePlantPhotos" :key="index">
-                <div class="photo-item" @click="openImagePreview(index)">
-                  <van-image 
-                    :src="img" 
-                    fit="cover" 
-                    class="swipe-img"
-                    :radius="12"
-                  />
-                  <div class="photo-overlay">
-                    <div class="photo-info">
-                      <div class="photo-index">
-                        <van-icon name="image" size="14" />
-                        <span>照片 {{ index + 1 }}/{{ userStore.prePlantPhotos.length }}</span>
-                      </div>
-                      <div class="photo-hint">
-                        <van-icon name="search" size="14" />
-                        <span>点击放大观察细节</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </van-swipe-item>
-            </van-swipe>
-            
-            <!-- 轮播控制 -->
-            <div class="swipe-controls">
-              <van-button 
-                type="default" 
-                size="small" 
-                icon="pause-circle-o"
-                @click="pauseAutoPlay"
-                v-if="isAutoPlaying"
-                class="control-btn"
-              >
-                暂停自动播放
-              </van-button>
-              <van-button 
-                type="default" 
-                size="small" 
-                icon="play-circle-o"
-                @click="startAutoPlay"
-                v-else
-                class="control-btn"
-              >
-                开始自动播放
-              </van-button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 无照片提示 -->
-        <div v-else class="empty-state">
-          <div class="empty-content">
-            <van-icon name="flower-o" size="60" color="#ebedf0" />
-            <h3>等待植物照片</h3>
-            <p>老师正在上传你的植物照片，请稍候...</p>
-            <van-button 
-              type="default" 
-              size="small" 
-              @click="refreshPhotos"
-              :loading="refreshing"
-            >
-              <van-icon name="replay" />
-              刷新查看
-            </van-button>
-          </div>
-        </div>
-      </div>
+    <div class="stage-body">
+      <section class="evaluate-panel">
+        <header class="panel-header method-title">我用了哪些观察方法了解植物朋友？</header>
 
-      <!-- ================= 右侧：感官选择区 ================= -->
-      <div class="right-panel">
-        <div class="sensory-section">
-          <div class="sensory-header">
-            <van-icon name="eye-o" color="#1989fa" />
-            <div class="header-content">
-              <h2>我做到了</h2>
-              <p class="header-subtitle">(请选择你使用过的感官)</p>
-            </div>
-          </div>
-          
-          <div class="sensory-progress">
-            <div class="progress-info">
-              <span class="progress-text">已选择 {{ checkedItems.length }}/5 个感官</span>
-              <span class="progress-percent">{{ Math.round((checkedItems.length / 5) * 100) }}%</span>
-            </div>
-            <van-progress 
-              :percentage="(checkedItems.length / 5) * 100" 
-              color="#1989fa" 
-              stroke-width="6"
-              :show-pivot="false"
-              class="progress-bar"
-            />
-          </div>
-
-          <div class="sensory-grid">
-            <div 
-              class="sensory-card" 
-              v-for="item in options" 
-              :key="item.name"
-              @click="toggleItem(item.name)"
-              :class="{ 'is-selected': checkedItems.includes(item.name) }"
-            >
-              <div class="sensory-icon">
-                <div class="icon-circle" :style="{ backgroundColor: getIconBgColor(item.name) }">
-                  <span class="icon-emoji">{{ item.icon }}</span>
-                </div>
-                <div class="check-indicator" v-if="checkedItems.includes(item.name)">
-                  <van-icon name="success" color="#fff" size="16" />
-                </div>
-              </div>
-              <div class="sensory-content">
-                <h3 class="sensory-title">{{ item.name }}</h3>
-                <p class="sensory-desc">{{ getSensoryDescription(item.name) }}</p>
-              </div>
-              <div class="sensory-action">
-                <van-icon 
-                  :name="checkedItems.includes(item.name) ? 'checked' : 'circle'" 
-                  :color="checkedItems.includes(item.name) ? '#07c160' : '#dcdee0'" 
-                  size="20"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- 已选感官提示 -->
-          <div class="selected-hint" v-if="checkedItems.length > 0">
-            <van-icon name="good-job-o" color="#07c160" />
-            <span>你已经选择了 {{ checkedItems.length }} 种感官，观察得很仔细！</span>
-          </div>
-          <div class="empty-hint" v-else>
-            <van-icon name="info-o" color="#969799" />
-            <span>请选择你使用过的感官进行观察</span>
-          </div>
+        <div class="option-list">
+          <button
+            v-for="item in options"
+            :key="item.name"
+            type="button"
+            class="option-card"
+            :class="{ active: checkedItems.includes(item.name) }"
+            @click="toggleItem(item.name)"
+          >
+            <span class="option-text">{{ item.icon }} {{ item.name }}</span>
+            <span class="option-check" :class="{ checked: checkedItems.includes(item.name) }">
+              <span v-if="checkedItems.includes(item.name)">✓</span>
+            </span>
+          </button>
         </div>
 
-        <!-- 底部提交区域 -->
-        <div class="submit-section">
-          <div class="submit-content">
-            <van-button 
-              type="primary" 
-              block 
-              round 
-              size="large"
-              :disabled="checkedItems.length === 0"
-              @click="onNextStep"
-              :loading="loading"
-              class="submit-btn"
-              icon="arrow"
-            >
-              <template #loading>
-                <van-loading type="spinner" size="20px" />
-              </template>
-              <span v-if="checkedItems.length > 0">
-                完成观察，进入记录卡环节
-              </span>
-              <span v-else>
-                请先选择观察的感官
-              </span>
-            </van-button>
-            
-            <div class="submit-tip" v-if="checkedItems.length > 0">
-              <van-icon name="clock-o" color="#07c160" />
-              <span>提交后将进入下一环节，请确认已观察完毕</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 import { useUserStore } from '../store/user';
 import { submitSensoryApi } from '../api/student';
-import { showToast, showImagePreview, showDialog } from 'vant';
+import { showToast } from 'vant';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 const loading = ref(false);
 const checkedItems = ref([]);
-const isAutoPlaying = ref(true);
-const photoHeight = ref(280);
-const refreshing = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.sensory));
 
-// --- 左侧多媒体功能 ---
-const openImagePreview = (startIndex) => {
-  if (!userStore.prePlantPhotos || userStore.prePlantPhotos.length === 0) return;
-  showImagePreview({
-    images: userStore.prePlantPhotos,
-    startPosition: startIndex,
-    closeable: true,
-    closeOnClickImage: true,
-    closeOnClickOverlay: true,
-    teleport: 'body'
-  });
-};
-
-const pauseAutoPlay = () => {
-  isAutoPlaying.value = false;
-  showToast({
-    message: '已暂停自动播放',
-    type: 'success',
-    duration: 1000
-  });
-};
-
-const startAutoPlay = () => {
-  isAutoPlaying.value = true;
-  showToast({
-    message: '已开始自动播放',
-    type: 'success',
-    duration: 1000
-  });
-};
-
-const refreshPhotos = async () => {
-  refreshing.value = true;
-  try {
-    // 模拟刷新操作，实际项目中可能需要调用API重新获取照片
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    showToast('已刷新照片列表');
-  } catch (error) {
-    console.warn('刷新照片失败:', error);
-  } finally {
-    refreshing.value = false;
-  }
-};
-
-const showHelp = () => {
-  showDialog({
-    title: '感官观察站使用说明',
-    message: '欢迎来到感官观察站！请先观察左侧的植物照片，然后选择你使用过的感官进行记录。观察完成后，点击提交进入下一环节。',
-    confirmButtonText: '知道了',
-    cancelButtonText: '关闭'
-  });
-};
-
-// --- 右侧感官选择功能 ---
 const options = [
-  { name: '看了看', icon: '👀' },
-  { name: '闻了闻', icon: '👃' },
-  { name: '摸了摸', icon: '🤚' },
+  { name: '看一看', icon: '👀' },
+  { name: '闻一闻', icon: '👃' },
+  { name: '摸一摸', icon: '✋' },
   { name: '听一听', icon: '👂' },
-  { name: '尝了尝', icon: '👅' }
+  { name: '尝一尝', icon: '👅' },
+  { name: '其他', icon: '✨' },
 ];
-
-// 获取感官描述
-const getSensoryDescription = (name) => {
-  const descriptions = {
-    '看了看': '观察植物的颜色、形状、大小等视觉特征',
-    '闻了闻': '闻一闻植物有没有特殊的气味或芳香',
-    '摸了摸': '触摸植物的叶子、茎干，感受触感',
-    '听一听': '倾听风吹过植物的声音或植物生长的声音',
-    '尝了尝': '品尝植物的可食用部分（需在老师指导下）'
-  };
-  return descriptions[name] || '使用该感官进行观察';
-};
-
-// 获取图标背景色
-const getIconBgColor = (name) => {
-  const colors = {
-    '看了看': '#4fc3f7',
-    '闻了闻': '#81c784',
-    '摸了摸': '#ffb74d',
-    '听一听': '#ba68c8',
-    '尝了尝': '#ff8a65'
-  };
-  return colors[name] || '#7986cb';
-};
 
 const toggleItem = (name) => {
   if (checkedItems.value.includes(name)) {
-    checkedItems.value = checkedItems.value.filter(i => i !== name);
+    checkedItems.value = checkedItems.value.filter((v) => v !== name);
   } else {
     checkedItems.value.push(name);
-  }
-  
-  // 提供触觉反馈
-  if (checkedItems.value.length === 5) {
-    showToast({
-      message: '太棒了！你使用了全部五种感官！',
-      type: 'success'
-    });
   }
 };
 
 const onNextStep = async () => {
+  if (!canGoNext.value) return;
   if (checkedItems.value.length === 0) return;
-  
+
   loading.value = true;
   try {
-    // 调用后端接口保存环节 1 的选项
     await submitSensoryApi(userStore.studentId, checkedItems.value);
-    
-    showToast({ 
-      message: `观察记录成功！你使用了${checkedItems.value.length}种感官`, 
-      type: 'success' 
-    });
-    
-    // 平滑过渡到环节 2
-    userStore.setStage('2');
-  } catch (err) {
-    console.error("提交失败:", err);
-    showToast('网络有点慢，请重试');
+    userStore.setSensorySelections(checkedItems.value);
+    userStore.setStage('sensory-transition');
+    showToast({ message: '提交成功', type: 'success' });
+  } catch (error) {
+    console.error(error);
+    showToast('提交失败，请重试');
   } finally {
     loading.value = false;
   }
 };
-
-// 页面加载时的初始化
-onMounted(() => {
-  // 检查是否有默认选中的感官（可以从userStore中获取）
-  if (userStore.sensorySelections && userStore.sensorySelections.length > 0) {
-    checkedItems.value = [...userStore.sensorySelections];
-  }
-});
 </script>
 
 <style scoped>
-/* ================= 整体布局 - 平板优化 ================= */
+/* =========== 全局背景手账化 =========== */
 .stage-container {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   overflow: hidden;
+  background: #F4F1E1; /* 整体页面变成复古牛皮纸色 */
 }
 
-.split-layout {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  background-color: transparent;
-  max-height: calc(100vh - 120px); /* 考虑导航栏和地址栏空间 */
-}
-
-/* 平板横向布局优化 */
-@media (max-width: 1024px) {
-  .split-layout {
-    max-height: calc(100vh - 100px);
-  }
-}
-
-@media (max-width: 1024px) and (orientation: portrait) {
-  .split-layout {
-    flex-direction: column;
-  }
-}
-
-/* 横向平板优化 */
-@media (max-width: 1366px) and (min-height: 1024px) and (orientation: portrait) {
-  .split-layout {
-    max-height: calc(100vh - 140px);
-  }
-}
-
-/* ================= 左侧：植物观察区 ================= */
-.left-panel {
-  flex: 1;
-  background-color: rgba(255, 255, 255, 0.95);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  border-right: 1px solid rgba(235, 237, 240, 0.8);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
-}
-
-/* 观察引导卡片 */
-.observation-guide {
-  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 6px 20px rgba(7, 193, 96, 0.15);
-  animation: slideInUp 0.5s ease-out;
-}
-
-.guide-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.guide-header span {
-  font-size: 18px;
-  font-weight: bold;
-  color: #2e7d32;
-}
-
-.guide-content p {
-  font-size: 15px;
-  color: #333;
-  margin-bottom: 16px;
-  line-height: 1.6;
-}
-
-.guide-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.guide-step {
-  background: rgba(255, 255, 255, 0.9);
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  color: #2e7d32;
-  border: 1px solid rgba(7, 193, 96, 0.3);
-  transition: all 0.3s;
-}
-
-.guide-step:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(7, 193, 96, 0.2);
-}
-
-/* 植物照片展示区 */
-.photo-section {
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  animation: fadeIn 0.6s ease-out;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px;
-  background: linear-gradient(90deg, #f8f9fa 0%, #fff 100%);
-  border-bottom: 1px solid #f2f3f5;
-}
-
-.section-header span {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-  margin-left: 8px;
-}
-
-.photo-count {
-  background: #07c160;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.photo-gallery {
-  padding: 20px;
-}
-
-.photo-swipe {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.photo-item {
-  position: relative;
-  height: 100%;
-  cursor: pointer;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.swipe-img {
-  width: 100%;
-  height: 280px;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-
-.photo-item:hover .swipe-img {
-  transform: scale(1.03);
-}
-
-.photo-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 20px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.photo-item:hover .photo-overlay {
-  opacity: 1;
-}
-
-.photo-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: white;
-}
-
-.photo-index,
-.photo-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
-
-.swipe-controls {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-}
-
-.control-btn {
-  background: #fff;
-  border: 1px solid #07c160;
-  color: #07c160;
-  font-weight: 500;
-  border-radius: 20px;
-  padding: 6px 16px;
-  transition: all 0.3s;
-}
-
-.control-btn:hover {
-  background: #07c160;
-  color: white;
-}
-
-/* 无照片提示 */
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px 20px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  animation: fadeIn 0.6s ease-out;
-}
-
-.empty-content {
-  text-align: center;
-}
-
-.empty-content h3 {
-  margin: 16px 0 8px;
-  color: #333;
-  font-size: 18px;
-}
-
-.empty-content p {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-/* 观察提示卡片 */
-.observation-tips {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 6px 20px rgba(242, 189, 39, 0.15);
-  animation: slideInUp 0.7s ease-out;
-}
-
-.tips-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.tips-header span {
-  font-size: 16px;
-  font-weight: bold;
-  color: #f57c00;
-}
-
-.tips-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.tips-list li {
-  position: relative;
-  padding-left: 24px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-}
-
-.tips-list li:before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  color: #07c160;
-  font-weight: bold;
-}
-
-/* ================= 右侧：感官选择区 ================= */
-.right-panel {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.95);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.sensory-section {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  overflow-y: auto;
-}
-
-.sensory-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #f0f4ff;
-  animation: fadeIn 0.5s ease-out;
-}
-
-.header-content h2 {
-  margin: 0;
-  font-size: 20px;
-  color: #333;
-}
-
-.header-subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #666;
-}
-
-.sensory-progress {
-  background: #f8f9ff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.1);
-  animation: slideInRight 0.6s ease-out;
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.progress-text {
-  font-size: 14px;
-  color: #666;
-}
-
-.progress-percent {
-  font-size: 18px;
-  font-weight: bold;
-  color: #1989fa;
-}
-
-.progress-bar {
-  border-radius: 3px;
-}
-
-.sensory-grid {
+/* =========== 顶部导航栏（融入纸张风格） =========== */
+.top-nav {
+  min-height: 56px;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  animation: fadeIn 0.8s ease-out;
+  grid-template-columns: 132px 1fr 132px;
+  align-items: center;
+  gap: 8px;
+  background: #FDFBF2; /* 导航栏纸张色 */
+  border-bottom: 2px dashed #D4CBB3; /* 虚线边缘 */
+  box-shadow: 0 4px 10px rgba(90, 76, 67, 0.05); /* 柔和暖色阴影 */
+  flex-shrink: 0;
+  z-index: 10;
 }
 
-.sensory-card {
+.top-nav-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #5A4C43; /* 深棕灰字体 */
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 1px;
+}
+
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
+}
+
+/* 覆盖 Vant 按钮样式 - 3D手账风 */
+:deep(.van-button--primary) {
+  background-color: #5C8D6D !important;
+  border-color: #5C8D6D !important;
+  box-shadow: 0 4px 0 #3A664A !important;
+  color: #FDFBF2 !important;
+  transition: all 0.1s;
+}
+
+:deep(.van-button--primary:active) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #3A664A !important;
+}
+
+/* 禁用状态的纸板质感 */
+:deep(.van-button--primary:disabled) {
+  background-color: #E3DBC7 !important;
+  border-color: #E3DBC7 !important;
+  color: #A3968C !important;
+  box-shadow: none !important;
+  opacity: 1 !important; /* 覆盖vant默认的透明度，保持纸板实色感 */
+  transform: none !important;
+}
+
+/* =========== 内容区域 =========== */
+.stage-body {
+  flex: 1;
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 2px solid #f2f3f5;
-  position: relative;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
-.sensory-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  border-color: #dcdee0;
-}
-
-.sensory-card.is-selected {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e3f2fd 100%);
-  border-color: #1989fa;
-  box-shadow: 0 8px 20px rgba(25, 137, 250, 0.2);
-  animation: cardPulse 0.4s ease-out;
-}
-
-@keyframes cardPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-.sensory-icon {
-  position: relative;
-  margin-right: 16px;
-  flex-shrink: 0;
-}
-
-.icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s;
-}
-
-.sensory-card:hover .icon-circle {
-  transform: scale(1.1);
-}
-
-.icon-emoji {
-  font-size: 28px;
-}
-
-.check-indicator {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #07c160;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(7, 193, 96, 0.3);
-  animation: popIn 0.3s ease-out;
-}
-
-@keyframes popIn {
-  0% { transform: scale(0); }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.sensory-content {
-  flex: 1;
-}
-
-.sensory-title {
-  margin: 0 0 6px 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-.sensory-desc {
-  margin: 0;
-  font-size: 13px;
-  color: #666;
-  line-height: 1.5;
-}
-
-.sensory-action {
-  opacity: 0.6;
-  transition: opacity 0.3s;
-}
-
-.sensory-card:hover .sensory-action {
-  opacity: 1;
-}
-
-/* 提示区域 */
-.selected-hint,
-.empty-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 14px;
-  animation: fadeIn 0.5s ease-out;
-}
-
-.selected-hint {
-  background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e8 100%);
-  color: #07c160;
-}
-
-.empty-hint {
-  background: #f8f9fa;
-  color: #969799;
-  border: 1px dashed #dcdee0;
-}
-
-/* 底部提交区域 */
-.submit-section {
-  background: #fff;
-  border-top: 1px solid #ebedf0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  animation: slideInUp 0.5s ease-out;
-}
-
-.submit-content {
+/* 核心记录面板 - 手账内页质感 */
+.evaluate-panel {
+  background: #FDFBF2;
+  border-radius: 16px;
+  padding: 30px 24px 34px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  border: 2px dashed #D4CBB3;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  width: min(96%, 1220px);
+  max-height: 100%;
+  overflow: visible;
+  position: relative; /* 为伪元素胶带定位 */
 }
 
-.submit-btn {
+/* 面板顶部的小胶带装饰（纯CSS） */
+.evaluate-panel::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2.5deg);
+  width: 112px;
+  height: 26px;
+  background: rgba(215, 202, 171, 0.8);
+  box-shadow: 0 1px 3px rgba(85, 70, 45, 0.14);
+  border-radius: 1px;
+  z-index: 8;
+}
+
+.panel-header {
   font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  box-shadow: 0 6px 15px rgba(25, 137, 250, 0.3);
-  transition: all 0.3s;
+  font-weight: 700;
+  color: #5A4C43;
 }
 
-.submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(25, 137, 250, 0.4);
+.method-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 10px;
+  position: relative;
+  display: inline-block;
+  align-self: center;
 }
 
-.submit-btn:active:not(:disabled) {
-  transform: translateY(0);
+/* 标题底部加一条马克笔风格的高亮线 */
+.method-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(246, 218, 115, 0.6); /* 暖黄色马克笔 */
+  z-index: -1;
+  border-radius: 4px;
 }
 
-.submit-tip {
+/* =========== 选项列表（互动卡片） =========== */
+.option-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 4px; /* 为阴影留出空间 */
+}
+
+/* 选项厚纸板样式 */
+.option-card {
+  width: 100%;
+  min-height: 108px;
+  border: 2px solid #E3DBC7;
+  border-radius: 14px;
+  background: #FAF7EA;
+  padding: 0 16px 0 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 6px 0 #E3DBC7; /* 坚实的底部阴影，像厚积木/纸板 */
+  transition: all 0.15s ease;
+}
+
+/* 选中状态：按压下去，变绿 */
+.option-card.active {
+  background: #5C8D6D;
+  border-color: #3A664A;
+  box-shadow: 0 6px 0 #3A664A; /* 保持高度感，避免容器视觉缩小 */
+  transform: none;
+}
+
+.option-text {
+  font-size: 22px;
+  color: #5A4C43;
+  font-weight: 800;
+  transition: color 0.15s;
+}
+
+/* 选中后文字变纸白色 */
+.option-card.active .option-text {
+  color: #FDFBF2;
+}
+
+/* 右侧勾选框 - 未选中像盖章区 */
+.option-check {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%; /* 改成圆形更童趣 */
+  border: 2px dashed #D4CBB3;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #07c160;
+  font-size: 24px;
+  font-weight: 900;
+  flex-shrink: 0;
+  transition: all 0.2s;
 }
 
-/* 动画定义 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* 选中后的打钩状态 */
+.option-check.checked {
+  border: none;
+  background: #FDFBF2;
+  color: #5C8D6D; /* 绿色的钩 */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* 微微浮起 */
+  transform: scale(1.1) rotate(-5deg); /* 选中时有一点俏皮的放大和倾斜 */
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+
+:deep(.van-button--large) {
+  height: 44px;
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+:deep(.top-nav-action.van-button) {
+  height: 40px;
+  padding-inline: 18px;
+  font-size: 16px;
+  font-weight: 800;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .split-layout {
-    flex-direction: column;
-  }
-  
-  .left-panel {
-    border-right: none;
-    border-bottom: 1px solid rgba(235, 237, 240, 0.8);
-    max-height: 50vh;
-  }
-  
-  .right-panel {
-    max-height: 50vh;
-  }
-  
-  .guide-steps {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .photo-gallery {
-    padding: 15px;
-  }
-  
-  .swipe-img {
-    height: 200px;
-  }
-  
-  .sensory-card {
-    padding: 16px;
-  }
-  
-  .icon-circle {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .icon-emoji {
-    font-size: 24px;
-  }
-}
 
-@media (max-width: 480px) {
-  .stage-container {
-    background: #f5f7fa;
+/* =========== 平板竖屏/小屏幕适配 =========== */
+@media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 14px;
+    padding-inline: 14px;
+  }
+
+  .stage-body {
+    padding: 12px;
+  }
+
+  .evaluate-panel {
+    padding: 24px 16px 26px;
+  }
+
+  .method-title {
+    font-size: 21px;
+  }
+
+  .option-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .option-card {
+    min-height: 96px;
+    box-shadow: 0 4px 0 #E3DBC7;
   }
   
-  .left-panel,
-  .right-panel {
-    padding: 15px;
+  .option-text {
+    font-size: 19px;
   }
-  
-  .observation-guide,
-  .observation-tips {
-    padding: 16px;
-  }
-  
-  .sensory-title {
-    font-size: 15px;
-  }
-  
-  .sensory-desc {
-    font-size: 12px;
-  }
-}
-
-/* 滚动条美化 */
-.sensory-section::-webkit-scrollbar,
-.left-panel::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sensory-section::-webkit-scrollbar-track,
-.left-panel::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.sensory-section::-webkit-scrollbar-thumb,
-.left-panel::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.sensory-section::-webkit-scrollbar-thumb:hover,
-.left-panel::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 </style>

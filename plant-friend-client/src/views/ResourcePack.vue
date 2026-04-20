@@ -1,242 +1,180 @@
-<template>
+﻿<template>
   <div class="stage-container">
-    <van-nav-bar title="环节 4：魔法资源包与知识闯关" fixed placeholder border />
+    <div class="top-nav">
+      <span class="top-nav-spacer" aria-hidden="true"></span>
+      <div class="top-nav-title">写写我的植物朋友</div>
+      <van-button
+        type="primary"
+        round
+        size="small"
+        @click="submitStage4"
+        :loading="loading"
+        :disabled="!canGoNext"
+        class="top-nav-action"
+      >
+        下一步
+      </van-button>
+    </div>
 
     <div class="resource-layout">
-      
-      <!-- 顶部魔法资源包展示 -->
-      <div class="resource-header">
-        <van-icon name="photo-o" color="#07c160" /> 
-        魔法资源包 - 写作小妙招
-      </div>
-      
-      <!-- 1. 资源包列表视图 -->
-      <div class="pack-list-view" v-if="!selectedPack">
-        <div class="pack-list-description">
-          <p>点击下方资源包，查看对应的写作小妙招图片资源</p>
+      <div class="resource-stack">
+        <div class="pack-card plant-card">
+          <div class="pack-card-title">回看照片</div>
+          <div class="plant-photo-strip">
+            <button
+              v-for="(photo, index) in displayedPlantPhotos"
+              :key="index"
+              type="button"
+              class="plant-photo-btn"
+              @click="onPhotoPreview(index)"
+            >
+              <van-image :src="photo" fit="cover" radius="4" class="plant-photo-image" />
+            </button>
+          </div>
         </div>
-        
-        <div class="pack-grid">
-          <div 
-            v-for="pack in resourcePacks" 
-            :key="pack.id"
-            class="pack-card"
-            @click="selectPack(pack)"
-          >
-            <div class="pack-card-icon">
-              <van-icon :name="pack.icon" size="32" color="#1989fa" />
-            </div>
-            <div class="pack-card-content">
-              <h3 class="pack-card-title">{{ pack.title }}</h3>
-              <p class="pack-card-desc">{{ pack.description }}</p>
-              <div class="pack-card-meta">
-                <span class="image-count">
-                  <van-icon name="photo-o" size="14" />
-                  {{ pack.images.length }} 张图片
-                </span>
-                <span class="view-hint">点击查看 →</span>
+
+        <div class="help-section">
+          <div class="help-title">我还需要一点帮助：</div>
+          <div class="help-grid">
+            <button
+              v-for="pack in resourcePacks"
+              :key="pack.id"
+              type="button"
+              class="help-item"
+              @click="onPreview(pack)"
+            >
+              <div class="help-item-content">
+                <div class="help-item-inner">
+                  <div class="help-item-text">{{ formatPrompt(pack.prompt) }}</div>
+                  <div class="help-item-tip">点击查看</div>
+                </div>
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- 2. 资源包详情视图 -->
-      <div class="pack-detail-view" v-else>
-        <div class="detail-header">
-          <van-button 
-            icon="arrow-left" 
-            type="primary" 
-            size="small" 
-            plain 
-            @click="selectedPack = null"
-            class="back-btn"
-          >
-            返回资源包列表
-          </van-button>
-          <div class="detail-title">
-            <van-icon :name="selectedPack.icon" color="#07c160" />
-            <h2>{{ selectedPack.title }}</h2>
-          </div>
-          <p class="detail-description">{{ selectedPack.description }}</p>
-        </div>
-        
-        <div class="detail-content">
-          <!-- 图片资源展示 -->
-          <div v-if="selectedPack.images && selectedPack.images.length > 0">
-            <div class="image-count-hint">
-              <van-icon name="photo-o" /> 共 {{ selectedPack.images.length }} 张图片
-            </div>
-            <div class="image-gallery">
-              <van-grid :column-num="2" gutter="10">
-                <van-grid-item 
-                  v-for="(img, index) in selectedPack.images" 
-                  :key="index"
-                  @click="onPreview(selectedPack.id, index)"
-                  class="resource-grid-item"
-                >
-                  <van-image 
-                    :src="img.url" 
-                    radius="8" 
-                    fit="cover" 
-                    style="height: 140px;"
-                    :alt="img.name"
-                  />
-                  <div class="img-tag">{{ img.name }}</div>
-                </van-grid-item>
-              </van-grid>
-            </div>
-          </div>
-          
-          <!-- 无图片提示 -->
-          <div v-else class="empty-images">
-            <van-icon name="photo-fail" size="50" color="#ebedf0" />
-            <p>该资源包暂无图片资源</p>
-          </div>
-          
-          <!-- 资源包提示 -->
-          <div class="pack-tip" v-if="selectedPack.tip">
-            💡 {{ selectedPack.tip }}
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. 底部提交 -->
-      <div class="action-footer">
-        <van-button
-          type="primary"
-          block
-          round
-          size="large"
-          @click="submitStage4"
-          :loading="loading"
-          loading-text="正在保存进度..."
-        >
-          查看完资源包，下一步
-        </van-button>
-      </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { useUserStore } from '../store/user';
 import { showImagePreview, showToast } from 'vant';
+import { NEXT_BUTTON_KEYS } from '../constants/nextButtonControls';
 
 const userStore = useUserStore();
 const loading = ref(false);
+const canGoNext = computed(() => userStore.isNextButtonEnabled(NEXT_BUTTON_KEYS.resourcePack));
 
-// 当前选中的资源包
-const selectedPack = ref(null);
+const displayedPlantPhotos = computed(() => (userStore.prePlantPhotos || []).slice(0, 3));
 
-// 定义4个资源包，每个包只包含一张图片
+const onPhotoPreview = (startIndex) => {
+  if (displayedPlantPhotos.value.length === 0) return;
+  showImagePreview({
+    images: displayedPlantPhotos.value,
+    startPosition: startIndex,
+    closeable: true,
+    closeOnClickOverlay: true,
+    teleport: 'body',
+  });
+
+  axios.post(`/api/student/track-resource-click/${userStore.studentId}/我的植物朋友照片`).catch((error) => {
+    console.warn('上报植物照片点击失败:', error);
+  });
+};
+
+const formatPrompt = (text) => {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
+  return raw.replace('，', '，\n');
+};
+
 const resourcePacks = ref([
   {
-    id: 'multi-aspect',
-    title: '多方面介绍',
-    icon: 'eye-o',
-    description: '多方面介绍植物朋友小妙招 - 从颜色、形状、大小等多角度观察植物',
-    tip: '试着从不同角度观察你的植物朋友，会有新发现哦！',
-    images: [
-      { name: '多方面观察技巧', url: '/resources/multi-aspect.jpg' }
-    ]
+    id: 'orderly',
+    title: '顺序百宝箱',
+    prompt: '我已经想好了“先写什么再写什么”，该怎么连起来呢？',
+    imageName: '有序描写步骤',
+    imageUrl: '/resources/orderly.jpg',
+    previewUrl: '/resources/orderly.jpg',
   },
   {
     id: 'feeling',
-    title: '融入感受',
-    icon: 'smile-comment-o',
-    description: '融入感受小妙招 - 把对植物的情感写进作文里',
-    tip: '当你触摸叶子时，有什么感觉？闻到花香时，想到了什么？',
-    images: [
-      { name: '情感表达方法', url: '/resources/feeling.jpg' }
-    ]
-  },
-  {
-    id: 'orderly',
-    title: '有序介绍',
-    icon: 'orders-o',
-    description: '有序介绍植物朋友小妙招 - 从上到下、从远到近有条理地描写',
-    tip: '先写整体印象，再写局部细节，顺序很重要！',
-    images: [
-      { name: '有序描写步骤', url: '/resources/orderly.jpg' }
-    ]
+    title: '感受小锦囊',
+    prompt: '我记录了很多的发现，该怎么合起来写呢？',
+    imageName: '情感表达方法',
+    imageUrl: '/resources/feeling.jpg',
+    previewUrl: '/resources/feeling.jpg',
   },
   {
     id: 'vocabulary',
-    title: '优美词句',
-    icon: 'notes-o',
-    description: '优美词句积累卡 - 收集描写植物的精彩词语和句子',
-    tip: '把这些好词好句记下来，让你的作文更生动！',
-    images: [
-      { name: '词汇句子积累', url: '/resources/vocabulary.jpg' }
-    ]
-  }
+    title: '词语百花园',
+    prompt: '我想把植物朋友写清楚，可以用上哪些优美生动的词句呢？',
+    imageName: '词句积累',
+    imageUrl: '/resources/vocabulary.jpg',
+    previewUrl: '/resources/vocabulary.jpg',
+  },
 ]);
 
-/**
- * 选择资源包
- */
-const selectPack = (pack) => {
-  selectedPack.value = pack;
+const previewBlobUrls = new Map();
+
+const warmResourcePackImages = async () => {
+  await Promise.all(
+    resourcePacks.value.map(async (pack) => {
+      try {
+        const res = await fetch(pack.imageUrl, { cache: 'force-cache' });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const oldUrl = previewBlobUrls.get(pack.id);
+        if (oldUrl) URL.revokeObjectURL(oldUrl);
+        previewBlobUrls.set(pack.id, blobUrl);
+        pack.previewUrl = blobUrl;
+      } catch (_) {
+        pack.previewUrl = pack.imageUrl;
+      }
+    })
+  );
 };
 
-/**
- * 点击图片放大预览，并静默上报点击次数
- */
-const onPreview = async (packId, index) => {
-  const pack = resourcePacks.value.find(p => p.id === packId);
-  if (!pack) return;
-  
-  // 获取当前资源包的所有图片URL
-  const imageUrls = pack.images.map(img => img.url);
-  
-  // 1. 调用 Vant 预览大图
+onMounted(() => {
+  warmResourcePackImages();
+});
+
+onBeforeUnmount(() => {
+  previewBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+  previewBlobUrls.clear();
+});
+
+const onPreview = async (pack) => {
   showImagePreview({
-    images: imageUrls,
-    startPosition: index,
+    images: [pack.previewUrl || pack.imageUrl],
+    startPosition: 0,
     closeable: true,
-    closeOnClickImage: true,
     closeOnClickOverlay: true,
-    teleport: 'body'
+    teleport: 'body',
   });
 
-  // 2. 向后端静默上报点击数据
-  // 格式：资源包名称 + 图片名称，例如："多方面介绍-颜色观察法"
-  const resourceName = `${pack.title}-${pack.images[index].name}`;
-  
   try {
-    // 调用后端留好的统计接口
+    const resourceName = `${pack.title}-${pack.imageName}`;
     await axios.post(`/api/student/track-resource-click/${userStore.studentId}/${resourceName}`);
-    console.log(`✅ 成功上报点击记录: ${resourceName}`);
-  } catch (err) {
-    console.warn("点击上报失败，可能是网络问题", err);
+  } catch (error) {
+    console.warn('上报资源点击失败:', error);
   }
 };
 
-    /**
-     * 提交环节 4
-     */
 const submitStage4 = async () => {
+  if (!canGoNext.value) return;
+
   loading.value = true;
   try {
-    // 告诉后端：该学生已完成环节 4
-    await axios.post('/api/student/stage4/complete-resources', {
-      student_id: userStore.studentId
-    });
-    
-    showToast({
-      message: '资源包学习完成！',
-      type: 'success'
-    });
-    
-    // 顺利进入环节 5（AI评语与荣誉时刻页面）
+    await axios.post('/api/student/stage4/complete-resources', { student_id: userStore.studentId });
     userStore.setStage('5');
-  } catch (err) {
-    console.error("提交环节4失败:", err);
-    showToast('网络有点小脾气，请重试');
+  } catch (error) {
+    console.error(error);
+    showToast('提交失败，请重试');
   } finally {
     loading.value = false;
   }
@@ -244,280 +182,346 @@ const submitStage4 = async () => {
 </script>
 
 <style scoped>
+/* =========== 全局背景手账化 =========== */
 .stage-container {
   height: 100%;
-  background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
+  background: #F4F1E1; /* 复古牛皮纸色底，去除了渐变蓝 */
   overflow: hidden;
 }
 
-.resource-layout { 
-  padding: 15px; 
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 120px); /* 考虑导航栏和地址栏空间 */
-}
-
-/* 平板适配 */
-@media (max-width: 1024px) {
-  .resource-layout {
-    max-height: calc(100vh - 100px);
-    padding: 12px;
-  }
-}
-
-/* 横向平板优化 */
-@media (max-width: 1366px) and (min-height: 1024px) and (orientation: portrait) {
-  .resource-layout {
-    max-height: calc(100vh - 140px);
-    padding: 20px;
-  }
-}
-
-.resource-header { 
-  font-size: 18px; 
-  font-weight: bold; 
-  margin-bottom: 15px; 
-  color: #333; 
-  display: flex;
+/* =========== 顶部导航栏（与所有页面保持绝对统一） =========== */
+.top-nav {
+  min-height: 56px !important;
+  padding: max(0px, env(safe-area-inset-top)) 16px 0 16px;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
   align-items: center;
   gap: 8px;
-}
-
-/* 资源包列表视图样式 */
-.pack-list-description {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 20px;
-  padding: 10px;
-  background: #f0f9ff;
-  border-radius: 8px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.pack-grid {
-  display: grid;
-  grid-template-columns: 1fr; /* 默认单列，平板改为矩阵 */
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-/* 平板矩阵布局 */
-@media (min-width: 768px) {
-  .pack-grid {
-    grid-template-columns: repeat(2, 1fr); /* 平板2列 */
-  }
-}
-
-/* 横向平板大屏幕优化 */
-@media (min-width: 1024px) and (orientation: portrait) {
-  .pack-grid {
-    gap: 20px;
-  }
-}
-
-/* 手机端保持单列 */
-@media (max-width: 767px) {
-  .pack-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.pack-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.pack-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-  border-color: #e6f7ff;
-}
-
-.pack-card:active {
-  transform: translateY(0);
-}
-
-.pack-card-icon {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 16px;
+  background: #FDFBF2; 
+  border-bottom: 2px dashed #D4CBB3; 
+  box-shadow: 0 4px 10px rgba(90, 76, 67, 0.05); 
   flex-shrink: 0;
+  z-index: 10;
 }
 
-.pack-card-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.pack-card-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin: 0 0 6px 0;
-}
-
-.pack-card-desc {
-  font-size: 13px;
-  color: #666;
-  margin: 0 0 10px 0;
-  line-height: 1.4;
-}
-
-.pack-card-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.image-count {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #888;
-}
-
-.view-hint {
-  font-size: 12px;
-  color: #07c160;
-  font-weight: 500;
-}
-
-/* 资源包详情视图样式 */
-.detail-header {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.back-btn {
-  margin-bottom: 16px;
-}
-
-.detail-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.detail-title h2 {
-  font-size: 22px;
-  color: #333;
-  margin: 0;
-}
-
-.detail-description {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-  margin: 0;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.detail-content {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.image-count-hint {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 16px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.image-gallery {
-  margin-bottom: 20px;
-}
-
-.resource-grid-item {
-  cursor: pointer;
-  transition: all 0.2s;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.resource-grid-item:active {
-  transform: scale(0.98);
-}
-
-.resource-grid-item:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.img-tag { 
-  font-size: 12px; 
-  color: #555; 
-  text-align: center; 
-  margin-top: 6px; 
-  background: #f8f9fa;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid #ebedf0;
-  font-weight: 500;
+.top-nav-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #5A4C43; 
+  letter-spacing: 1px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.empty-images {
+.top-nav-spacer {
+  width: 100%;
+}
+
+.top-nav-action {
+  width: 100%;
+  justify-self: end;
+}
+
+/* 覆盖 Vant 按钮样式 - 3D手账风 */
+:deep(.top-nav-action.van-button) {
+  height: 40px;
+  padding-inline: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  border: none !important;
+  background-color: #5C8D6D !important;
+  background: #5C8D6D !important; /* 覆盖原来的蓝色渐变 */
+  box-shadow: 0 4px 0 #3A664A !important;
+  color: #FDFBF2 !important;
+  transition: all 0.1s;
+}
+:deep(.top-nav-action.van-button:active) {
+  transform: translateY(4px) !important;
+  box-shadow: 0 0 0 #3A664A !important;
+}
+:deep(.top-nav-action.van-button:disabled) {
+  background: #E3DBC7 !important;
+  color: #A3968C !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* =========== 内容布局 =========== */
+.resource-layout {
+  flex: 1;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow-y: auto; /* 允许滚动 */
+}
+
+.resource-stack {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* =========== 顶部照片大卡片 =========== */
+.pack-card {
+  background: #FDFBF2;
+  border-radius: 16px;
+  border: 2px dashed #D4CBB3;
+  box-shadow: 4px 12px 30px rgba(90, 76, 67, 0.12);
+  position: relative;
+}
+
+.pack-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 120px;
+  height: 24px;
+  background-color: rgba(220, 203, 163, 0.7); /* 胶带装饰 */
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.05);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.plant-card {
+  flex: 0 0 auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pack-card-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #5A4C43;
   text-align: center;
-  padding: 40px 20px;
-  color: #999;
-  background: #fafafa;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  position: relative;
+  display: inline-block;
+  align-self: center;
+}
+.pack-card-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0px;
+  left: -5%;
+  width: 110%;
+  height: 8px;
+  background: rgba(135, 179, 146, 0.4); /* 绿色荧光笔高亮 */
+  z-index: -1;
+  border-radius: 4px;
 }
 
-.empty-images p {
-  margin-top: 10px;
-  font-size: 14px;
+/* --- 拍立得照片条 --- */
+.plant-photo-strip {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 20px;
+  padding-top: 10px; /* 给旋转留出空间 */
 }
 
-.pack-tip {
-  background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e8 100%);
-  border-left: 4px solid #07c160;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  margin-top: 20px;
+/* 照片底纸 */
+.plant-photo-btn {
+  border: 0;
+  padding: 10px 10px 24px 10px; /* 底部大留白 */
+  background: #FFFFFF;
+  border: 1px solid #E3DBC7;
+  cursor: pointer;
+  width: min(31%, 280px);
+  flex: 0 1 min(31%, 280px);
+  border-radius: 4px; /* 拍立得方角 */
+  box-shadow: 2px 6px 14px rgba(90, 76, 67, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* 错落有致的摆放感 */
+.plant-photo-btn:nth-child(1) { transform: rotate(-2deg); }
+.plant-photo-btn:nth-child(2) { transform: rotate(1deg); }
+.plant-photo-btn:nth-child(3) { transform: rotate(-1.5deg); }
+
+.plant-photo-image {
+  width: 100%;
+  height: clamp(180px, 24vh, 290px);
+  background: #F6F4E8;
+  border-radius: 2px !important;
+}
+
+
+/* =========== 下方资源锦囊区 =========== */
+.help-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 20px;
+}
+
+.help-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #5C8D6D; /* 森系绿 */
+  text-align: center;
+}
+
+.help-grid {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* 锦囊卡片：厚纸板按钮样式 */
+.help-item {
+  border: 2px solid #E3DBC7;
+  border-radius: 14px;
+  text-align: left;
+  padding: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 0 #E3DBC7; /* 极具物理感的按压阴影 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 178px;
+  transition: all 0.15s ease;
+  background: #FAF7EA;
+}
+
+/* 为三个锦囊分配不同的手账纸张色彩 */
+.help-item:nth-child(1) {
+  background-color: #EAF2E6; /* 浅草绿 */
+  border-color: #C0D6BA;
+  box-shadow: 0 8px 0 #C0D6BA;
+}
+.help-item:nth-child(2) {
+  background-color: #FFF4E5; /* 暖鹅黄 */
+  border-color: #E6CDA8;
+  box-shadow: 0 8px 0 #E6CDA8;
+}
+.help-item:nth-child(3) {
+  background-color: #FDFBF2; /* 原木纸白 */
+  border-color: #D4CBB3;
+  box-shadow: 0 8px 0 #D4CBB3;
+}
+
+/* 按压反馈 */
+.help-item:active {
+  transform: translateY(8px);
+  box-shadow: 0 0 0 transparent;
+}
+
+.help-item-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* 去除原来的内部渐变色，变为纯粹的布局容器 */
+.help-item-inner {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.help-item-text {
+  font-size: 17px;
   line-height: 1.5;
+  font-weight: 800;
+  color: #5A4C43;
+  text-align: center;
+  white-space: pre-line;
+  min-height: calc(1.5em * 2);
 }
 
-.action-footer { 
-  margin-top: 30px; 
-  padding-bottom: 40px; 
+.help-item-tip {
+  font-size: 14px;
+  font-weight: 800;
+  color: #8A7C73;
+  background: rgba(90, 76, 67, 0.08); /* 淡淡的底色 */
+  padding: 6px 16px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+
+/* =========== 响应式适配 =========== */
+@media (max-width: 900px) {
+  .top-nav {
+    grid-template-columns: 112px 1fr 112px;
+    padding-inline: 10px;
+  }
+
+  :deep(.top-nav-action.van-button) {
+    font-size: 14px;
+    padding-inline: 14px;
+  }
+
+  .pack-card {
+    padding: 14px;
+  }
+  
+  .plant-card {
+    padding: 20px 14px;
+  }
+
+  .help-title {
+    font-size: 20px;
+  }
+
+  .help-item-text {
+    font-size: 16px;
+  }
+
+  .plant-photo-image {
+    height: clamp(150px, 20vh, 230px);
+  }
+}
+
+@media (max-width: 600px) {
+  .help-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .plant-photo-strip {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .plant-photo-btn {
+    width: min(45%, 180px); /* 手机端一行排不下3个，改为一行2个或自动 */
+    flex-basis: min(45%, 180px);
+    transform: rotate(0) !important; /* 手机端去掉旋转，省空间 */
+  }
+  
+  .help-item {
+    min-height: 140px;
+  }
 }
 </style>

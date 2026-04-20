@@ -1,28 +1,31 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class StudentProfile(BaseModel):
     student_id: str
     student_name: str
     is_logged_in: bool = False
-    current_stage: str = "0_login" 
-    
-    # 预置照片
-    pre_photo_url: Optional[str] = None
-    
-    # 环节1
-    sensory_evaluations: List[str] = [] # e.g. ["看了看", "摸了摸"]
-    # 环节2
-    dimension_evaluations: List[str] = [] # e.g. ["记录特点"]
-    record_card_img: Optional[str] = None
-    # 环节3
-    draft_img: Optional[str] = None
-    ai_feedback_text: Optional[str] = None
-    has_completed_ai: bool = False
-    # 环节4
-    has_viewed_resources: bool = False
-    # 环节5
-    final_img: Optional[str] = None
+    current_stage: str = "0"
 
-    is_logged_in: bool = False
+    pre_plant_1: Optional[str] = None
+    pre_plant_2: Optional[str] = None
+    pre_plant_3: Optional[str] = None
+    pre_record_card: Optional[str] = None
+
+    sensory_evaluations: List[str] = Field(default_factory=list)
+    dimension_evaluations: List[str] = Field(default_factory=list)
+    resource_click_stats: dict = Field(default_factory=dict)
+    stage5_checks: List[str] = Field(default_factory=list)
+
+    stage1_stars: int = 0
+    stage3_stars: int = 0
+    stage5_stars: int = 0
+    total_stars: int = 0
+
+    has_viewed_resources: bool = False
+    has_claimed_certificate: bool = False
+
+    last_active_time: Optional[datetime] = None
